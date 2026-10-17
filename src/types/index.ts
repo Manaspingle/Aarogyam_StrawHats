@@ -109,6 +109,7 @@ export interface Hospital {
   contact_person: string;
   phone: string;
   emergency_helpline?: string;
+  twilio_phone_number?: string;
   verified: boolean;
   is_approved?: boolean;
   managed_by?: string | null;
@@ -179,6 +180,16 @@ export interface DonorReward {
   created_at: string;
 }
 
+export interface EmergencyCallDispatchLog {
+  hospital_id: string;
+  hospital_name: string;
+  to_phone: string;
+  from_phone: string;
+  call_sid?: string;
+  status: string;
+  timestamp: string;
+}
+
 export interface EmergencyRequest {
   id: string;
   requesting_hospital_id: string;
@@ -189,6 +200,8 @@ export interface EmergencyRequest {
   status: 'active' | 'fulfilled' | 'closed';
   notes?: string;
   city?: string;
+  target_hospital_ids?: string[];
+  called_hospitals?: EmergencyCallDispatchLog[];
   created_at: string;
 }
 

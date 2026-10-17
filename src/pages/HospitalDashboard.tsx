@@ -2,7 +2,8 @@ import { useState, useEffect, useCallback } from 'react';
 import {
   Building2, Calendar, Droplet, Plus, Minus, CheckCircle2,
   Clock, Users, MapPin, ShieldCheck, AlertCircle, Award,
-  Send, Truck, ArrowRight, Search, Activity, AlertTriangle
+  Send, Truck, ArrowRight, Search, Activity, AlertTriangle,
+  Phone, PhoneCall, Check, X
 } from 'lucide-react';
 import { DashboardLayout, PageHeader, StatCard, type NavItem } from '@/components/DashboardLayout';
 import { Button, Input, Select, Card, Badge, Modal, EmptyState, Skeleton, ConfirmDialog } from '@/components/ui';
@@ -28,6 +29,13 @@ import {
 import { BLOOD_GROUPS, ORGAN_TYPES, CITIES } from '@/lib/mockData';
 import { RewardManagement } from '@/components/RewardManagement';
 import { haversineDistance } from '@/lib/compatibility';
+import {
+  dispatchTwilioEmergencyCalls,
+  resolveFromNumber,
+  resolveToNumber,
+  getTwilioConfigStatus,
+  type TwilioCallDispatchResult,
+} from '@/lib/twilioService';
 import type { Hospital, Appointment, EmergencyRequest, Transfer, BloodInventoryItem, Donor } from '@/types';
 
 type View = 'overview' | 'appointments' | 'inventory' | 'emergency' | 'nearby' | 'rewards' | 'settings';
@@ -49,13 +57,17 @@ export default function HospitalDashboard() {
   const [transfers, setTransfers] = useState<Transfer[]>([]);
   const [loading, setLoading] = useState(true);
 
-  // New Emergency Request Modal
+  // New Emergency Request Modal & Twilio Multi-Hospital Selection
   const [showEmergencyModal, setShowEmergencyModal] = useState(false);
   const [emBloodGroup, setEmBloodGroup] = useState('O-');
   const [emUnits, setEmUnits] = useState('2');
-  const [emUrgency, setEmUrgency] = useState<'critical' | 'urgent' | 'moderate'>('critical');
+  const [emUrgency, setEmUrgency] = useState<'critical' | 'urgent' | 'moderate'>('urgent');
   const [emNotes, setEmNotes] = useState('');
+  const [selectedHospitalIds, setSelectedHospitalIds] = useState<string[]>([]);
   const [submittingEmergency, setSubmittingEmergency] = useState(false);
+  const [callingProgressText, setCallingProgressText] = useState('');
+  const [callDispatchResults, setCallDispatchResults] = useState<TwilioCallDispatchResult[] | null>(null);
+  const [showCallResultsModal, setShowCallResultsModal] = useState(false);
 
   // Cross-Hospital Transfer State
   const [filterNearbyStock, setFilterNearbyStock] = useState('all');
@@ -74,6 +86,7 @@ export default function HospitalDashboard() {
   const [facilityAddress, setFacilityAddress] = useState(hospital?.address || '');
   const [facilityCity, setFacilityCity] = useState(hospital?.city || 'Mumbai');
   const [facilityHelpline, setFacilityHelpline] = useState(hospital?.emergency_helpline || '');
+  const [facilityTwilioPhone, setFacilityTwilioPhone] = useState(hospital?.twilio_phone_number || '');
   const [facilitySaving, setFacilitySaving] = useState(false);
   const [facilitySuccess, setFacilitySuccess] = useState(false);
 
@@ -109,6 +122,7 @@ export default function HospitalDashboard() {
       setFacilityAddress(hospital.address || '');
       setFacilityCity(hospital.city || 'Mumbai');
       setFacilityHelpline(hospital.emergency_helpline || '');
+      setFacilityTwilioPhone(hospital.twilio_phone_number || '');
     }
   }, [hospital]);
 
@@ -120,25 +134,104 @@ export default function HospitalDashboard() {
     loadData();
   }
 
-  // Create Emergency Broadcast
+  // Filter only real hospitals currently active / registered on platform (excluding self)
+  const availableHospitals = allHospitals.filter(
+    (h) => h.id !== currentHospitalId && h.user_id !== profile?.user_id
+  );
+
+  function handleToggleSelectAll() {
+    if (selectedHospitalIds.length === availableHospitals.length) {
+      setSelectedHospitalIds([]);
+    } else {
+      setSelectedHospitalIds(availableHospitals.map((h) => h.id));
+    }
+  }
+
+  function handleToggleHospital(id: string) {
+    setSelectedHospitalIds((prev) =>
+      prev.includes(id) ? prev.filter((item) => item !== id) : [...prev, id]
+    );
+  }
+
+  // Create Emergency Broadcast & Dispatch Twilio Voice Calls
   async function handleCreateEmergency(e: React.FormEvent) {
     e.preventDefault();
-    setSubmittingEmergency(true);
+    if (!emBloodGroup) {
+      alert('Please select a blood group needed');
+      return;
+    }
+    const units = parseInt(emUnits) || 1;
+    if (units <= 0) {
+      alert('Please specify valid units needed');
+      return;
+    }
 
+    setSubmittingEmergency(true);
+    setCallingProgressText('Initiating Twilio telephony dispatch...');
+
+    const targetHospitalsToCall = availableHospitals.filter((h) =>
+      selectedHospitalIds.includes(h.id)
+    );
+
+    // 1. Dispatch Twilio Voice Calls to each selected hospital with distinct from and to numbers
+    let dispatchLogs: TwilioCallDispatchResult[] = [];
+    if (targetHospitalsToCall.length > 0) {
+      dispatchLogs = await dispatchTwilioEmergencyCalls(
+        {
+          callingHospital: {
+            id: currentHospitalId,
+            name: facilityName || hospital?.hospital_name || 'Accredited Hospital Center',
+            city: facilityCity,
+            phone: facilityPhone,
+            twilio_phone_number: facilityTwilioPhone,
+          },
+          targetHospitals: targetHospitalsToCall.map((h) => ({
+            id: h.id,
+            name: h.hospital_name || h.name || 'Medical Center',
+            city: h.city,
+            phone: h.phone,
+            emergency_helpline: h.emergency_helpline,
+          })),
+          bloodGroup: emBloodGroup,
+          unitsNeeded: units,
+          urgency: emUrgency,
+          notes: emNotes,
+        },
+        (progress) => {
+          setCallingProgressText(`Calling ${progress.targetHospitalName} (${progress.toPhone})...`);
+        }
+      );
+    }
+
+    // 2. Persist Emergency Request record into Firestore
     await createEmergencyRequest({
       requesting_hospital_id: currentHospitalId,
-      hospital_name: facilityName || 'Accredited Hospital Center',
+      hospital_name: facilityName || hospital?.hospital_name || 'Accredited Hospital Center',
       blood_group: emBloodGroup,
-      units_needed: parseInt(emUnits) || 1,
+      units_needed: units,
       urgency: emUrgency,
       status: 'active',
       city: facilityCity,
       notes: emNotes,
+      target_hospital_ids: selectedHospitalIds,
+      called_hospitals: dispatchLogs.map((d) => ({
+        hospital_id: d.targetHospitalId,
+        hospital_name: d.targetHospitalName,
+        to_phone: d.toPhone,
+        from_phone: d.fromPhone,
+        call_sid: d.callSid,
+        status: d.status,
+        timestamp: d.timestamp,
+      })),
     });
 
     setSubmittingEmergency(false);
     setShowEmergencyModal(false);
     setEmNotes('');
+    setCallDispatchResults(dispatchLogs);
+    if (dispatchLogs.length > 0) {
+      setShowCallResultsModal(true);
+    }
     loadData();
   }
 
@@ -235,6 +328,7 @@ export default function HospitalDashboard() {
       address: facilityAddress,
       city: facilityCity,
       emergency_helpline: facilityHelpline,
+      twilio_phone_number: facilityTwilioPhone,
     });
 
     await refreshProfile();
@@ -862,6 +956,18 @@ export default function HospitalDashboard() {
               />
             </div>
 
+            <div>
+              <Input
+                label={t('hospital.twilio_caller_id')}
+                value={facilityTwilioPhone}
+                onChange={setFacilityTwilioPhone}
+                placeholder="e.g. +12025550199 or +919800000000"
+              />
+              <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
+                {t('hospital.twilio_caller_id_desc')}
+              </p>
+            </div>
+
             <div className="grid grid-cols-2 gap-4">
               <Select
                 label={t('hospital.city')}
@@ -893,69 +999,295 @@ export default function HospitalDashboard() {
       )}
 
       {/* ── MODALS ── */}
-      {/* Broadcast Emergency SOS Modal */}
+      {/* Create Emergency Request Modal (Exact Match to User Reference Specification) */}
       <Modal
         open={showEmergencyModal}
         onClose={() => setShowEmergencyModal(false)}
-        title={t('hospital.modal_sos_title')}
-        description={t('hospital.modal_sos_desc')}
+        title={t('hospital.modal_sos_title_new')}
+        maxWidth="max-w-xl"
       >
         <form onSubmit={handleCreateEmergency} className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
-            <Select
-              label="Urgent Blood Group"
-              value={emBloodGroup}
-              onChange={setEmBloodGroup}
-              options={BLOOD_GROUPS.map((b) => ({ value: b, label: b }))}
-            />
-            <Input
-              label="Units Required"
-              type="number"
-              min={1}
-              max={20}
-              value={emUnits}
-              onChange={setEmUnits}
-            />
-          </div>
-
+          {/* Urgency 3-Card Selector */}
           <div>
-            <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
-              {t('hospital.urgency')}
-            </label>
-            <div className="grid grid-cols-3 gap-2">
-              {(['critical', 'urgent', 'moderate'] as const).map((lvl) => (
-                <button
-                  key={lvl}
-                  type="button"
-                  onClick={() => setEmUrgency(lvl)}
-                  className={`py-2 rounded-xl text-xs font-bold capitalize border ${
-                    emUrgency === lvl
-                      ? 'bg-red-600 text-white border-red-600 shadow-xs'
-                      : 'bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 border-slate-200 dark:border-slate-700'
-                  }`}
-                >
-                  {t('hospital.' + lvl) || lvl}
-                </button>
-              ))}
+            <div className="grid grid-cols-3 gap-2.5">
+              <button
+                type="button"
+                onClick={() => setEmUrgency('critical')}
+                className={`py-3 px-2 rounded-2xl text-center border-2 transition-all ${
+                  emUrgency === 'critical'
+                    ? 'border-red-500 bg-red-50/70 dark:bg-red-950/30 text-red-700 dark:text-red-300 shadow-xs'
+                    : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300'
+                }`}
+              >
+                <p className="text-sm font-black capitalize">Critical</p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">&lt; 1 hr need</p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setEmUrgency('urgent')}
+                className={`py-3 px-2 rounded-2xl text-center border-2 transition-all ${
+                  emUrgency === 'urgent'
+                    ? 'border-amber-400 bg-amber-50/70 dark:bg-amber-950/30 text-amber-900 dark:text-amber-200 shadow-xs'
+                    : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300'
+                }`}
+              >
+                <p className="text-sm font-black capitalize text-amber-700 dark:text-amber-300">Urgent</p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">1-4 hr need</p>
+              </button>
+
+              <button
+                type="button"
+                onClick={() => setEmUrgency('moderate')}
+                className={`py-3 px-2 rounded-2xl text-center border-2 transition-all ${
+                  emUrgency === 'moderate'
+                    ? 'border-blue-400 bg-blue-50/70 dark:bg-blue-950/30 text-blue-800 dark:text-blue-200 shadow-xs'
+                    : 'border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 hover:border-slate-300'
+                }`}
+              >
+                <p className="text-sm font-black capitalize">Moderate</p>
+                <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-0.5">1-2 day need</p>
+              </button>
             </div>
           </div>
 
-          <Input
-            label="Special Clinical Notes / Patient Condition (Optional)"
-            value={emNotes}
-            onChange={setEmNotes}
-            placeholder="e.g. Polytrauma accident victim undergoing emergency OT surgery"
-          />
+          {/* Blood Group and Units Row */}
+          <div className="grid grid-cols-2 gap-3.5">
+            <div>
+              <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
+                {t('hospital.blood_group_needed')} <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={emBloodGroup}
+                onChange={(e) => setEmBloodGroup(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-sky-500"
+                required
+              >
+                <option value="">Select group</option>
+                {BLOOD_GROUPS.map((bg) => (
+                  <option key={bg} value={bg}>
+                    {bg}
+                  </option>
+                ))}
+              </select>
+            </div>
 
-          <div className="flex justify-end gap-2 pt-2">
-            <Button variant="outline" onClick={() => setShowEmergencyModal(false)}>
+            <div>
+              <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
+                {t('hospital.units_needed')} <span className="text-red-500">*</span>
+              </label>
+              <input
+                type="number"
+                min={1}
+                max={50}
+                value={emUnits}
+                onChange={(e) => setEmUnits(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-sky-500"
+                required
+              />
+            </div>
+          </div>
+
+          {/* Notes */}
+          <div>
+            <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
+              {t('hospital.special_notes')}
+            </label>
+            <input
+              type="text"
+              value={emNotes}
+              onChange={(e) => setEmNotes(e.target.value)}
+              placeholder={t('hospital.notes_placeholder')}
+              className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-800 dark:text-slate-100 text-sm font-normal focus:outline-none focus:ring-2 focus:ring-sky-500"
+            />
+          </div>
+
+          {/* SELECT HOSPITALS TO CALL Section (Live platform hospitals only) */}
+          <div className="pt-1">
+            <div className="flex items-center justify-between mb-2">
+              <label className="text-xs font-black uppercase tracking-wider text-slate-700 dark:text-slate-300">
+                {t('hospital.select_hospitals_to_call')} <span className="text-red-500">*</span>
+              </label>
+              {availableHospitals.length > 0 && (
+                <button
+                  type="button"
+                  onClick={handleToggleSelectAll}
+                  className="text-xs font-bold text-sky-600 dark:text-sky-400 hover:underline"
+                >
+                  {selectedHospitalIds.length === availableHospitals.length
+                    ? t('hospital.deselect_all')
+                    : t('hospital.select_all')}
+                </button>
+              )}
+            </div>
+
+            <div className="border border-slate-200 dark:border-slate-700 rounded-2xl p-2.5 max-h-56 overflow-y-auto space-y-1.5 bg-slate-50/40 dark:bg-slate-900/60">
+              {availableHospitals.length === 0 ? (
+                <div className="p-4 text-center">
+                  <Building2 className="w-8 h-8 text-slate-300 dark:text-slate-600 mx-auto mb-2" />
+                  <p className="text-xs font-semibold text-slate-600 dark:text-slate-300">
+                    {t('hospital.no_other_hospitals')}
+                  </p>
+                </div>
+              ) : (
+                availableHospitals.map((h) => {
+                  const isChecked = selectedHospitalIds.includes(h.id);
+                  const phoneDisplay = h.emergency_helpline || h.phone || 'No phone recorded';
+                  return (
+                    <div
+                      key={h.id}
+                      onClick={() => handleToggleHospital(h.id)}
+                      className={`flex items-start gap-3 p-2.5 rounded-xl cursor-pointer transition-all border ${
+                        isChecked
+                          ? 'bg-sky-50/80 dark:bg-sky-950/30 border-sky-300 dark:border-sky-800'
+                          : 'bg-white dark:bg-slate-800/80 border-slate-100 dark:border-slate-700/60 hover:bg-slate-50 dark:hover:bg-slate-700/50'
+                      }`}
+                    >
+                      <input
+                        type="checkbox"
+                        checked={isChecked}
+                        onChange={() => {}} // Handled by parent div click
+                        className="mt-1 w-4 h-4 rounded text-sky-600 focus:ring-sky-500 border-slate-300 dark:border-slate-600 cursor-pointer"
+                      />
+                      <div className="flex-1 min-w-0">
+                        <div className="flex items-center justify-between">
+                          <p className="text-sm font-bold text-slate-900 dark:text-white truncate">
+                            {h.hospital_name || h.name || 'Medical Facility'}
+                          </p>
+                          {h.twilio_phone_number && (
+                            <span className="text-[10px] font-mono font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/60 px-1.5 py-0.5 rounded">
+                              Caller ID Set
+                            </span>
+                          )}
+                        </div>
+                        <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
+                          <span className="flex items-center gap-1">
+                            <MapPin className="w-3 h-3 text-slate-400" />
+                            {h.city}
+                          </span>
+                          <span className="flex items-center gap-1 font-mono">
+                            <Phone className="w-3 h-3 text-slate-400" />
+                            {phoneDisplay}
+                          </span>
+                        </div>
+                      </div>
+                    </div>
+                  );
+                })
+              )}
+            </div>
+
+            <p className="text-xs font-semibold text-slate-500 dark:text-slate-400 mt-1.5">
+              {selectedHospitalIds.length} of {availableHospitals.length} {t('hospital.hospitals_selected')}
+            </p>
+          </div>
+
+          {submittingEmergency && callingProgressText && (
+            <div className="p-3 bg-sky-50 dark:bg-sky-950/50 rounded-xl border border-sky-200 dark:border-sky-800 flex items-center gap-2">
+              <PhoneCall className="w-4 h-4 text-sky-600 animate-pulse" />
+              <p className="text-xs font-bold text-sky-800 dark:text-sky-200">
+                {callingProgressText}
+              </p>
+            </div>
+          )}
+
+          {/* Action Buttons */}
+          <div className="flex items-center justify-between pt-2">
+            <button
+              type="button"
+              onClick={() => setShowEmergencyModal(false)}
+              className="px-5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-sm font-bold text-slate-700 dark:text-slate-200 hover:bg-slate-50 dark:hover:bg-slate-700 transition-colors"
+            >
               {t('donor.close')}
-            </Button>
-            <Button variant="danger" type="submit" loading={submittingEmergency}>
-              <AlertTriangle className="h-4 w-4 mr-1.5" /> {t('hospital.broadcast_emergency_sos')}
-            </Button>
+            </button>
+
+            <button
+              type="submit"
+              disabled={submittingEmergency}
+              className="px-6 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-bold flex items-center gap-2 shadow-sm hover:shadow-md transition-all disabled:opacity-50"
+            >
+              <PhoneCall className="h-4 w-4" />
+              {submittingEmergency ? 'Connecting Twilio...' : t('hospital.create_and_call')}
+            </button>
           </div>
         </form>
+      </Modal>
+
+      {/* Twilio Call Dispatch Results Modal */}
+      <Modal
+        open={showCallResultsModal}
+        onClose={() => setShowCallResultsModal(false)}
+        title={t('hospital.calling_progress_title')}
+        maxWidth="max-w-xl"
+      >
+        <div className="space-y-4">
+          <div className="p-3.5 bg-emerald-50 dark:bg-emerald-950/40 border border-emerald-200 dark:border-emerald-800 rounded-2xl flex items-center gap-3">
+            <div className="p-2 rounded-xl bg-emerald-600 text-white">
+              <CheckCircle2 className="w-5 h-5" />
+            </div>
+            <div>
+              <h4 className="text-sm font-black text-emerald-900 dark:text-emerald-200">
+                Emergency Telephony SOS Broadcast Complete
+              </h4>
+              <p className="text-xs text-emerald-700 dark:text-emerald-300 mt-0.5">
+                {callDispatchResults?.length || 0} automated voice calls dispatched via Twilio to selected hospital casualty lines.
+              </p>
+            </div>
+          </div>
+
+          <div className="bg-slate-50 dark:bg-slate-800/60 p-3 rounded-2xl border border-slate-200 dark:border-slate-700 text-xs space-y-1">
+            <div className="flex justify-between font-mono">
+              <span className="text-slate-500">Calling Facility:</span>
+              <strong className="text-slate-800 dark:text-slate-200">{facilityName} ({facilityCity})</strong>
+            </div>
+            <div className="flex justify-between font-mono">
+              <span className="text-slate-500">From Caller ID:</span>
+              <strong className="text-purple-600 dark:text-purple-400 font-bold">
+                {resolveFromNumber({
+                  id: currentHospitalId,
+                  name: facilityName,
+                  city: facilityCity,
+                  phone: facilityPhone,
+                  twilio_phone_number: facilityTwilioPhone,
+                })}
+              </strong>
+            </div>
+            <div className="flex justify-between font-mono">
+              <span className="text-slate-500">Critical Requirement:</span>
+              <strong className="text-red-600">{emUnits} Units · {emBloodGroup} ({emUrgency})</strong>
+            </div>
+          </div>
+
+          <div className="space-y-2 max-h-56 overflow-y-auto">
+            {callDispatchResults?.map((res, i) => (
+              <div
+                key={i}
+                className="p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center justify-between"
+              >
+                <div>
+                  <p className="text-xs font-bold text-slate-900 dark:text-white">
+                    {res.targetHospitalName}
+                  </p>
+                  <p className="text-[11px] font-mono text-slate-500 dark:text-slate-400 mt-0.5">
+                    To: {res.toPhone} · From: {res.fromPhone}
+                  </p>
+                  <p className="text-[10px] font-mono text-slate-400">
+                    SID: {res.callSid}
+                  </p>
+                </div>
+                <Badge variant={res.isSimulation ? 'blue' : 'green'} dot>
+                  {res.status}
+                </Badge>
+              </div>
+            ))}
+          </div>
+
+          <div className="flex justify-end pt-2">
+            <Button variant="primary" onClick={() => setShowCallResultsModal(false)}>
+              {t('donor.close')}
+            </Button>
+          </div>
+        </div>
       </Modal>
 
       {/* Verify & Complete Donation Modal */}
