@@ -147,20 +147,20 @@ export function DashboardLayout({ children, navItems, activeView, onNavigate, ro
       </aside>
 
       {/* Mobile Top Header */}
-      <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200/90 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-4 lg:hidden">
-        <Link to="/" className="flex items-center gap-2.5">
-          <img src="/aarogyam-logo.jpg" alt="Aarogyam Logo" className="h-8 w-8 rounded-lg object-cover" />
-          <div>
+      <header className="sticky top-0 z-30 flex h-16 items-center justify-between border-b border-slate-200/90 dark:border-slate-800 bg-white/95 dark:bg-slate-900/95 backdrop-blur-md px-3 sm:px-4 lg:hidden">
+        <Link to="/" className="flex items-center gap-2 min-w-0">
+          <img src="/aarogyam-logo.jpg" alt="Aarogyam Logo" className="h-8 w-8 rounded-lg object-cover shrink-0" />
+          <div className="truncate">
             <span className="text-sm font-black text-brand-teal dark:text-teal-400 block leading-none">Aarogyam</span>
-            <span className="text-[9px] font-bold text-brand-orange uppercase leading-none mt-0.5 block">
+            <span className="text-[9px] font-bold text-brand-orange uppercase leading-none mt-0.5 block truncate">
               {roleLabel === 'Hospital Admin' ? t('dashboard.hospital_admin') : roleLabel === 'Verified Donor' ? t('dashboard.verified_donor') : roleLabel}
             </span>
           </div>
         </Link>
 
-        <div className="flex items-center gap-2">
+        <div className="flex items-center gap-1.5 sm:gap-2 shrink-0">
           {/* Mobile Language Selector */}
-          <div className="flex items-center gap-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-2 py-1 shadow-xs">
+          <div className="flex items-center gap-1 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 px-1.5 sm:px-2 py-1 shadow-xs">
             <Globe className="h-3 w-3 text-brand-orange shrink-0" />
             <select
               aria-label="Language"
@@ -176,20 +176,20 @@ export function DashboardLayout({ children, navItems, activeView, onNavigate, ro
           <button
             type="button"
             onClick={() => setEmergencyOpen(true)}
-            className="px-2.5 py-1.5 rounded-lg bg-red-600 text-white font-bold text-xs flex items-center gap-1"
+            className="px-2 sm:px-2.5 py-1.5 rounded-lg bg-red-600 text-white font-bold text-xs flex items-center gap-1 shrink-0"
           >
-            <Siren className="w-3.5 h-3.5" /> SOS
+            <Siren className="w-3.5 h-3.5" /> <span className="hidden xs:inline">SOS</span>
           </button>
           <button
             type="button"
             onClick={toggleTheme}
-            className="p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300"
+            className="p-1.5 sm:p-2 rounded-lg border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-600 dark:text-slate-300"
           >
             {theme === 'dark' ? <Sun className="w-4 h-4 text-amber-400" /> : <Moon className="w-4 h-4 text-slate-700" />}
           </button>
           <button
             onClick={() => setMobileOpen(!mobileOpen)}
-            className="rounded-lg border border-slate-200 dark:border-slate-700 p-2 text-slate-600 dark:text-slate-300"
+            className="rounded-lg border border-slate-200 dark:border-slate-700 p-1.5 sm:p-2 text-slate-600 dark:text-slate-300"
           >
             {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
           </button>
@@ -303,7 +303,7 @@ export function DashboardLayout({ children, navItems, activeView, onNavigate, ro
           </div>
         </header>
 
-        <div className="mx-auto max-w-7xl p-4 sm:p-6 lg:p-8">{children}</div>
+        <div className="mx-auto max-w-7xl p-3.5 sm:p-6 lg:p-8">{children}</div>
       </main>
 
       {/* Emergency Modal */}
@@ -324,15 +324,15 @@ type PageHeaderProps = {
 
 export function PageHeader({ title, description, action, badge }: PageHeaderProps) {
   return (
-    <div className="mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200/60 dark:border-slate-800 pb-5">
+    <div className="mb-5 sm:mb-6 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between border-b border-slate-200/60 dark:border-slate-800 pb-4 sm:pb-5">
       <div>
-        <div className="flex items-center gap-2.5">
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-slate-100">{title}</h1>
+        <div className="flex flex-wrap items-center gap-2 sm:gap-2.5">
+          <h1 className="text-xl sm:text-2xl lg:text-3xl font-black tracking-tight text-slate-900 dark:text-slate-100">{title}</h1>
           {badge}
         </div>
-        {description && <p className="mt-1 text-sm text-slate-500 dark:text-slate-400 max-w-2xl font-medium">{description}</p>}
+        {description && <p className="mt-1 text-xs sm:text-sm text-slate-500 dark:text-slate-400 max-w-2xl font-medium">{description}</p>}
       </div>
-      {action && <div className="flex items-center gap-2.5 shrink-0">{action}</div>}
+      {action && <div className="flex flex-wrap items-center gap-2 sm:gap-2.5 shrink-0">{action}</div>}
     </div>
   );
 }
@@ -358,12 +358,12 @@ const statColors: Record<string, { bg: string; text: string; ring: string }> = {
 export function StatCard({ label, value, icon, color = 'teal', subtitle }: StatCardProps) {
   const styles = statColors[color] || statColors.teal;
   return (
-    <div className="group rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-5 shadow-sm transition-all duration-200 hover:border-brand-teal/40 hover:shadow-md">
+    <div className="group rounded-2xl border border-slate-200/90 dark:border-slate-800 bg-white dark:bg-slate-900 p-4 sm:p-5 shadow-sm transition-all duration-200 hover:border-brand-teal/40 hover:shadow-md">
       <div className="flex items-center justify-between">
         <span className="text-xs font-bold uppercase tracking-wider text-slate-500 dark:text-slate-400">{label}</span>
         <div
           className={cn(
-            'flex h-11 w-11 items-center justify-center rounded-2xl border shadow-xs transition-transform duration-200 group-hover:scale-105',
+            'flex h-10 w-10 sm:h-11 sm:w-11 items-center justify-center rounded-2xl border shadow-xs transition-transform duration-200 group-hover:scale-105',
             styles.bg,
             styles.text,
             styles.ring,
@@ -372,8 +372,8 @@ export function StatCard({ label, value, icon, color = 'teal', subtitle }: StatC
           {icon}
         </div>
       </div>
-      <p className="mt-3 text-3xl font-black tracking-tight text-slate-900 dark:text-slate-100">{value}</p>
-      {subtitle && <p className="mt-1 text-xs text-slate-400 dark:text-slate-500 font-semibold">{subtitle}</p>}
+      <p className="mt-2 sm:mt-3 text-2xl sm:text-3xl font-black tracking-tight text-slate-900 dark:text-slate-100">{value}</p>
+      {subtitle && <p className="mt-0.5 sm:mt-1 text-[11px] sm:text-xs text-slate-400 dark:text-slate-500 font-semibold">{subtitle}</p>}
     </div>
   );
 }

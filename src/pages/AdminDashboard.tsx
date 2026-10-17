@@ -442,7 +442,7 @@ export default function AdminDashboard() {
           ) : (
             <div className="space-y-3">
               {emergencies.map((em) => (
-                <div key={em.id} className="p-4 rounded-xl border border-red-200 bg-red-50/50 flex justify-between items-center text-xs">
+                <div key={em.id} className="p-4 rounded-xl border border-red-200 bg-red-50/50 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs">
                   <div>
                     <span className="font-bold text-red-700">{em.hospital_name}</span>
                     <span className="text-slate-500"> — {em.blood_group} ({em.units_needed} Units needed)</span>

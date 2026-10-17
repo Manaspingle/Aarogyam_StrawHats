@@ -143,19 +143,19 @@ export default function AuthPage() {
       >
         <div className="bg-white rounded-3xl shadow-2xl border border-slate-100 overflow-hidden">
           {/* Header with Uploaded Brand Logo and #00605F */}
-          <div className="bg-gradient-to-r from-brand-teal via-[#005453] to-[#003837] px-8 py-7 text-white relative">
-            <div className="flex items-center justify-between">
-              <Link to="/" className="inline-flex items-center gap-3 text-white mb-3 hover:opacity-95 transition-opacity">
+          <div className="bg-gradient-to-r from-brand-teal via-[#005453] to-[#003837] px-5 py-6 sm:px-8 sm:py-7 text-white relative">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <Link to="/" className="inline-flex items-center gap-2.5 sm:gap-3 text-white mb-2 sm:mb-3 hover:opacity-95 transition-opacity">
                 <img
                   src="/aarogyam-logo.jpg"
                   alt="Aarogyam Logo"
-                  className="w-10 h-10 object-cover rounded-xl border-2 border-brand-orange shadow-md"
+                  className="w-9 h-9 sm:w-10 sm:h-10 object-cover rounded-xl border-2 border-brand-orange shadow-md"
                 />
-                <span className="text-2xl font-black">{t('app.name')}</span>
+                <span className="text-xl sm:text-2xl font-black">{t('app.name')}</span>
               </Link>
 
               {/* Language Switcher */}
-              <div className="flex items-center gap-1.5 bg-white/15 px-3 py-1 rounded-xl text-xs font-bold mb-3">
+              <div className="flex items-center gap-1.5 bg-white/15 px-2.5 py-1 rounded-xl text-xs font-bold mb-2 sm:mb-3">
                 <Globe className="w-3.5 h-3.5 text-brand-orange" />
                 <select
                   value={language}
@@ -179,13 +179,13 @@ export default function AuthPage() {
             </p>
           </div>
 
-          <div className="p-6 sm:p-8">
+          <div className="p-4 sm:p-8">
             {/* Mode toggle (Login / Signup) */}
-            <div className="flex gap-2 mb-6 p-1.5 bg-slate-100 rounded-2xl">
+            <div className="flex gap-2 mb-5 sm:mb-6 p-1.5 bg-slate-100 rounded-2xl">
               <button
                 type="button"
                 onClick={() => setMode('login')}
-                className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${
+                className={`flex-1 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all ${
                   mode === 'login' ? 'bg-white text-brand-teal shadow-sm' : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
@@ -194,7 +194,7 @@ export default function AuthPage() {
               <button
                 type="button"
                 onClick={() => setMode('signup')}
-                className={`flex-1 py-2.5 rounded-xl font-bold text-sm transition-all ${
+                className={`flex-1 py-2.5 rounded-xl font-bold text-xs sm:text-sm transition-all ${
                   mode === 'signup' ? 'bg-white text-brand-teal shadow-sm' : 'text-slate-500 hover:text-slate-800'
                 }`}
               >
@@ -203,11 +203,11 @@ export default function AuthPage() {
             </div>
 
             {/* Role toggle (Individual / Hospital) */}
-            <div className="flex gap-3 mb-6">
+            <div className="flex flex-col sm:flex-row gap-2.5 sm:gap-3 mb-5 sm:mb-6">
               <button
                 type="button"
                 onClick={() => setRole('individual')}
-                className={`flex-1 flex items-center justify-center gap-2.5 py-3 rounded-2xl border-2 transition-all font-bold text-sm ${
+                className={`flex-1 flex items-center justify-center gap-2.5 py-2.5 sm:py-3 rounded-2xl border-2 transition-all font-bold text-xs sm:text-sm ${
                   role === 'individual'
                     ? 'border-brand-teal bg-teal-50/70 text-brand-teal shadow-sm'
                     : 'border-slate-200 text-slate-600 hover:border-slate-300'
@@ -219,7 +219,7 @@ export default function AuthPage() {
               <button
                 type="button"
                 onClick={() => setRole('hospital')}
-                className={`flex-1 flex items-center justify-center gap-2.5 py-3 rounded-2xl border-2 transition-all font-bold text-sm ${
+                className={`flex-1 flex items-center justify-center gap-2.5 py-2.5 sm:py-3 rounded-2xl border-2 transition-all font-bold text-xs sm:text-sm ${
                   role === 'hospital'
                     ? 'border-brand-teal bg-teal-50/70 text-brand-teal shadow-sm'
                     : 'border-slate-200 text-slate-600 hover:border-slate-300'
@@ -253,7 +253,7 @@ export default function AuthPage() {
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <div className="relative">
                         <input
                           type="number"
@@ -279,7 +279,7 @@ export default function AuthPage() {
                     </div>
 
                     {/* Restricted Cities: Mumbai, Pune, Nagpur only */}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <select
                         value={city}
                         onChange={(e) => setCity(e.target.value as 'Mumbai' | 'Pune' | 'Nagpur')}
@@ -326,7 +326,7 @@ export default function AuthPage() {
                     </div>
 
                     {/* Restricted Cities: Mumbai, Pune, Nagpur only */}
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <div className="relative">
                         <BadgeCheck className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                         <input
@@ -362,7 +362,7 @@ export default function AuthPage() {
                       />
                     </div>
 
-                    <div className="grid grid-cols-2 gap-4">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 sm:gap-4">
                       <div className="relative">
                         <User className="absolute left-3.5 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-400" />
                         <input

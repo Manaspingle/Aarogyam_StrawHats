@@ -941,7 +941,7 @@ export default function HospitalDashboard() {
               required
             />
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input
                 label="Casualty Landline / Phone"
                 value={facilityPhone}
@@ -968,7 +968,7 @@ export default function HospitalDashboard() {
               </p>
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Select
                 label={t('hospital.city')}
                 value={facilityCity}
@@ -1052,7 +1052,7 @@ export default function HospitalDashboard() {
           </div>
 
           {/* Blood Group and Units Row */}
-          <div className="grid grid-cols-2 gap-3.5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3.5">
             <div>
               <label className="block text-xs font-bold text-slate-800 dark:text-slate-200 mb-1.5">
                 {t('hospital.blood_group_needed')} <span className="text-red-500">*</span>
@@ -1192,7 +1192,7 @@ export default function HospitalDashboard() {
           )}
 
           {/* Action Buttons */}
-          <div className="flex items-center justify-between pt-2">
+          <div className="flex flex-col-reverse xs:flex-row items-stretch xs:items-center justify-between gap-2.5 pt-2">
             <button
               type="button"
               onClick={() => setShowEmergencyModal(false)}
@@ -1204,7 +1204,7 @@ export default function HospitalDashboard() {
             <button
               type="submit"
               disabled={submittingEmergency}
-              className="px-6 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-bold flex items-center gap-2 shadow-sm hover:shadow-md transition-all disabled:opacity-50"
+              className="px-6 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white text-sm font-bold flex items-center justify-center gap-2 shadow-sm hover:shadow-md transition-all disabled:opacity-50"
             >
               <PhoneCall className="h-4 w-4" />
               {submittingEmergency ? 'Connecting Twilio...' : t('hospital.create_and_call')}
@@ -1298,7 +1298,7 @@ export default function HospitalDashboard() {
         description={t('hospital.modal_complete_desc')}
       >
         <div className="space-y-4">
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <Select
               label="Collected Blood Group"
               value={completingBloodGroup}

@@ -258,7 +258,7 @@ export default function EmergencyDispatch() {
             </p>
 
             {donorResponse === 'pending' ? (
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 xs:grid-cols-2 gap-3">
                 <button
                   onClick={handleAccept}
                   className="flex items-center justify-center gap-2 py-3.5 bg-teal-600 hover:bg-teal-700 text-white font-bold rounded-2xl transition-all shadow-md shadow-teal-600/20 text-sm"

@@ -12,7 +12,7 @@ const translations: Record<Language, Record<string, string>> = {
   en: {
     // Brand & Taglines
     'app.name': 'Aarogyam',
-    'app.tagline': 'City Blood & Organ Network',
+    'app.tagline': 'Connecting Care, Saving Lives.',
     'app.hero_badge': 'Rapid Emergency Accident & Organ Allocation Network',
     'app.hero_title_1': 'Immediate Emergency Care &',
     'app.hero_title_2': 'Life Allocation Network',
@@ -348,7 +348,7 @@ const translations: Record<Language, Record<string, string>> = {
   hi: {
     // Brand & Taglines
     'app.name': 'आरोग्यम्',
-    'app.tagline': 'शहर रक्त एवं अंग दान नेटवर्क',
+    'app.tagline': 'Connecting Care, Saving Lives.',
     'app.hero_badge': 'त्वरित दुर्घटना आपातकालीन एवं जीवन रक्षक नेटवर्क',
     'app.hero_title_1': 'त्वरित आपातकालीन चिकित्सा एवं',
     'app.hero_title_2': 'जीवन आवंटन नेटवर्क',
@@ -686,7 +686,7 @@ const translations: Record<Language, Record<string, string>> = {
   mr: {
     // Brand & Taglines
     'app.name': 'आरोग्यम्',
-    'app.tagline': 'शहर रक्त व अवयव दान नेटवर्क',
+    'app.tagline': 'Connecting Care, Saving Lives.',
     'app.hero_badge': 'तातडीचे अपघात आपत्कालीन व अवयव वाटप नेटवर्क',
     'app.hero_title_1': 'तातडीची आपत्कालीन वैद्यकीय मदत व',
     'app.hero_title_2': 'जीवन रक्षक नेटवर्क',

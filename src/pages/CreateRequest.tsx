@@ -1,4 +1,4 @@
-﻿import { useState } from 'react';
+import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { Droplet, Heart, Siren, ArrowRight, AlertCircle, Clock, MapPin, User } from 'lucide-react';
@@ -82,7 +82,7 @@ export default function CreateRequest() {
           <label className="block text-xs font-black uppercase tracking-wider text-slate-400 mb-3">
             Allocation Category
           </label>
-          <div className="grid grid-cols-2 gap-4">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
             <button
               type="button"
               onClick={() => {

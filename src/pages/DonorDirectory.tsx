@@ -142,7 +142,7 @@ export default function DonorDirectory() {
                 </span>
               </div>
 
-              <div className="grid grid-cols-2 gap-3">
+              <div className="grid grid-cols-1 xs:grid-cols-2 gap-3">
                 <div className="p-3 rounded-2xl bg-red-50 border border-red-100">
                   <p className="text-[10px] font-bold uppercase text-primary-700 flex items-center gap-1">
                     <Droplet className="w-3.5 h-3.5" /> Blood now
@@ -176,14 +176,14 @@ export default function DonorDirectory() {
                 </div>
               </div>
 
-              <div className="flex items-center justify-between pt-2 border-t border-slate-100">
+              <div className="flex flex-col xs:flex-row items-stretch xs:items-center justify-between gap-2.5 pt-2 border-t border-slate-100">
                 <p className="text-xs text-slate-500 flex items-center gap-1">
                   <Phone className="w-3.5 h-3.5" /> {d.phone}
                 </p>
                 <button
                   onClick={() => connectWithDonor(d)}
                   disabled={connectingId === d.id}
-                  className="inline-flex items-center gap-1.5 px-3.5 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-bold disabled:opacity-60"
+                  className="inline-flex items-center justify-center gap-1.5 px-3.5 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-xl text-xs font-bold disabled:opacity-60"
                 >
                   <Send className="w-3.5 h-3.5" />
                   {connectingId === d.id ? 'Connecting…' : 'Connect with donor'}

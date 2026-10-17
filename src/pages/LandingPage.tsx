@@ -161,7 +161,7 @@ export default function LandingPage() {
               </div>
 
               {/* Trust Badges */}
-              <div className="grid grid-cols-3 gap-3 sm:gap-4 pt-6 border-t border-slate-200/80 dark:border-slate-800">
+              <div className="grid grid-cols-1 xs:grid-cols-3 gap-3 sm:gap-4 pt-6 border-t border-slate-200/80 dark:border-slate-800">
                 <div className="flex items-center gap-2">
                   <ShieldCheck className="w-5 h-5 text-brand-teal dark:text-teal-400 flex-shrink-0" />
                   <span className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300">SHA-256 Ledger</span>
@@ -219,7 +219,7 @@ export default function LandingPage() {
                   </div>
 
                   {/* Inspiring Imagery Grid */}
-                  <div className="grid grid-cols-2 gap-3.5 mb-5">
+                  <div className="grid grid-cols-1 xs:grid-cols-2 gap-3.5 mb-5">
                     {/* Image 1: Dedicated Critical Care Doctors */}
                     <motion.div
                       whileHover={{ scale: 1.02 }}
@@ -446,15 +446,18 @@ export default function LandingPage() {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-10 mb-12">
             <div>
-              <div className="flex items-center gap-3 mb-4">
+              <div className="flex items-center gap-3 mb-2">
                 <img
                   src="/aarogyam-logo.jpg"
                   alt="Aarogyam Logo"
                   className="w-11 h-11 object-cover rounded-xl border border-brand-orange"
                 />
-                <span className="text-2xl font-black text-white">Aarogyam</span>
+                <div>
+                  <span className="text-2xl font-black text-white">Aarogyam</span>
+                  <p className="text-xs font-bold text-brand-orange tracking-wide">Connecting Care, Saving Lives.</p>
+                </div>
               </div>
-              <p className="text-sm text-slate-400 leading-relaxed">
+              <p className="text-sm text-slate-400 leading-relaxed mt-3">
                 Next-generation emergency accident response and ethical organ & blood allocation network across Maharashtra.
               </p>
             </div>
@@ -504,7 +507,7 @@ export default function LandingPage() {
           </div>
 
           <div className="border-t border-slate-800 pt-8 flex flex-col sm:flex-row items-center justify-between text-xs text-slate-500 gap-4">
-            <p>© 2026 Aarogyam Network. Dedicated to Saving Lives in Maharashtra.</p>
+            <p>© 2026 Aarogyam — Connecting Care, Saving Lives. Dedicated to Saving Lives in Maharashtra.</p>
             <p className="text-slate-400">Good Samaritan Protected · Instant Accident Triage · SHA-256 Verified</p>
           </div>
         </div>

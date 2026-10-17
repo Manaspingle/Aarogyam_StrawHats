@@ -475,8 +475,8 @@ export default function DonorDashboard() {
                 {t('donor.pledge_affirmation')}
               </p>
 
-              <div className="flex justify-center bg-slate-50 dark:bg-slate-950 rounded-2xl p-6 border border-slate-100 dark:border-slate-800">
-                <svg viewBox="0 0 200 280" className="w-64 h-80 drop-shadow-sm select-none">
+              <div className="flex justify-center bg-slate-50 dark:bg-slate-950 rounded-2xl p-4 sm:p-6 border border-slate-100 dark:border-slate-800 overflow-hidden">
+                <svg viewBox="0 0 200 280" className="w-full max-w-[250px] h-auto aspect-[200/280] drop-shadow-sm select-none">
                   {/* Stylized Body Silhouette */}
                   <ellipse cx="100" cy="35" rx="16" ry="20" fill="#f1f5f9" stroke="#cbd5e1" strokeWidth="1.5" />
                   <path
@@ -668,7 +668,7 @@ export default function DonorDashboard() {
             }
           />
 
-          <div className="mb-6 flex gap-2">
+          <div className="mb-6 flex flex-wrap gap-2">
             {(['all', 'scheduled', 'completed', 'cancelled'] as const).map((f) => (
               <button
                 key={f}
@@ -825,7 +825,7 @@ export default function DonorDashboard() {
         <Card className="p-6 max-w-2xl">
           <h3 className="text-lg font-black text-slate-900 dark:text-white mb-4">{t('donor.profile_title')}</h3>
           <form onSubmit={handleProfileSave} className="space-y-4">
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Input
                 label={t('auth.full_name')}
                 value={profileName}
@@ -840,7 +840,7 @@ export default function DonorDashboard() {
               />
             </div>
 
-            <div className="grid grid-cols-2 gap-4">
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
               <Select
                 label={t('donor.blood_group')}
                 value={profileBloodGroup}
@@ -891,7 +891,7 @@ export default function DonorDashboard() {
             }))}
           />
 
-          <div className="grid grid-cols-2 gap-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
             <div>
               <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
                 {t('donor.date')} *

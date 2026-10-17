@@ -49,11 +49,11 @@ export default function Navbar() {
                 <span className="absolute -top-1 -right-1 w-3.5 h-3.5 bg-brand-orange rounded-full border-2 border-white animate-pulse" />
               </div>
               <div>
-                <span className="font-black text-2xl tracking-tight text-brand-teal flex items-center gap-1">
+                <span className="font-black text-xl sm:text-2xl tracking-tight text-brand-teal flex items-center gap-1">
                   {t('app.name')}
                   <span className="w-2 h-2 rounded-full bg-brand-orange inline-block" />
                 </span>
-                <p className="text-[11px] font-bold text-slate-500 -mt-1 tracking-wider uppercase">
+                <p className="text-[9px] sm:text-[11px] font-bold text-slate-500 dark:text-slate-400 -mt-0.5 sm:-mt-1 tracking-tight sm:tracking-wider uppercase truncate max-w-[170px] xs:max-w-none">
                   {t('app.tagline')}
                 </p>
               </div>

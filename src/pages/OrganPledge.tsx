@@ -107,8 +107,8 @@ export default function OrganPledge() {
           </div>
           <p className="text-xs text-slate-500 mb-6">Click on any organ node to pledge or remove it.</p>
 
-          <div className="flex justify-center bg-slate-50 rounded-2xl p-4 border border-slate-100">
-            <svg viewBox="0 0 200 280" className="w-64 h-80 drop-shadow-sm select-none">
+          <div className="flex justify-center bg-slate-50 rounded-2xl p-4 border border-slate-100 overflow-hidden">
+            <svg viewBox="0 0 200 280" className="w-full max-w-[250px] h-auto aspect-[200/280] drop-shadow-sm select-none">
               {/* Stylized Body Silhouette */}
               <ellipse cx="100" cy="35" rx="16" ry="20" fill="#f1f5f9" stroke="#cbd5e1" strokeWidth="1.5" />
               <path
