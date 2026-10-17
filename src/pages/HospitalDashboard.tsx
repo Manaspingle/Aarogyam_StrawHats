@@ -34,6 +34,8 @@ import {
   resolveFromNumber,
   resolveToNumber,
   getTwilioConfigStatus,
+  getTwilioHotlineChannels,
+  resolveChannelForCall,
   type TwilioCallDispatchResult,
 } from '@/lib/twilioService';
 import type { Hospital, Appointment, EmergencyRequest, Transfer, BloodInventoryItem, Donor } from '@/types';
@@ -957,15 +959,73 @@ export default function HospitalDashboard() {
             </div>
 
             <div>
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-1.5 mb-1.5">
+                <label className="text-xs font-bold text-slate-700 dark:text-slate-300">
+                  {t('hospital.twilio_caller_id')}
+                </label>
+                <div className="flex flex-wrap items-center gap-1.5">
+                  <button
+                    type="button"
+                    onClick={() => setFacilityTwilioPhone('+17372508034')}
+                    className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-teal-50 dark:bg-teal-950/60 text-teal-700 dark:text-teal-300 border border-teal-200 dark:border-teal-800 hover:bg-teal-100"
+                  >
+                    Set Line 1 (+17372508034)
+                  </button>
+                  <button
+                    type="button"
+                    onClick={() => setFacilityTwilioPhone('+17372324091')}
+                    className="text-[10px] font-mono font-bold px-2 py-0.5 rounded bg-purple-50 dark:bg-purple-950/60 text-purple-700 dark:text-purple-300 border border-purple-200 dark:border-purple-800 hover:bg-purple-100"
+                  >
+                    Set Line 2 (+17372324091)
+                  </button>
+                </div>
+              </div>
               <Input
-                label={t('hospital.twilio_caller_id')}
+                label=""
                 value={facilityTwilioPhone}
                 onChange={setFacilityTwilioPhone}
-                placeholder="e.g. +12025550199 or +919800000000"
+                placeholder="e.g. +17372508034 or +17372324091"
               />
               <p className="text-[11px] text-slate-500 dark:text-slate-400 mt-1">
                 {t('hospital.twilio_caller_id_desc')}
               </p>
+
+              {/* Twilio Hotline Integration Overview */}
+              <div className="mt-3 p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 space-y-2 text-xs">
+                <div className="flex items-center justify-between">
+                  <span className="font-bold text-slate-700 dark:text-slate-300 flex items-center gap-1.5">
+                    <PhoneCall className="w-3.5 h-3.5 text-teal-600" />
+                    Twilio Telephony Dispatch Network
+                  </span>
+                  <Badge variant="green" dot>Active (SID: AC793e...635)</Badge>
+                </div>
+                <div className="grid grid-cols-1 sm:grid-cols-3 gap-2 text-[11px] font-mono">
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-teal-200 dark:border-teal-900/60 shadow-xs">
+                    <div className="flex items-center justify-between">
+                      <p className="text-teal-700 dark:text-teal-400 font-bold">Line 1</p>
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    </div>
+                    <p className="text-slate-500 mt-1">From: <strong className="text-purple-600 dark:text-purple-400">+17372508034</strong></p>
+                    <p className="text-slate-500">To: <strong className="text-slate-800 dark:text-slate-200">+919067375860</strong></p>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-purple-200 dark:border-purple-900/60 shadow-xs">
+                    <div className="flex items-center justify-between">
+                      <p className="text-purple-700 dark:text-purple-400 font-bold">Line 2</p>
+                      <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+                    </div>
+                    <p className="text-slate-500 mt-1">From: <strong className="text-purple-600 dark:text-purple-400">+17372324091</strong></p>
+                    <p className="text-slate-500">To: <strong className="text-slate-800 dark:text-slate-200">+917387880399</strong></p>
+                  </div>
+                  <div className="p-2.5 rounded-xl bg-white dark:bg-slate-900 border border-dashed border-slate-300 dark:border-slate-700">
+                    <div className="flex items-center justify-between">
+                      <p className="text-slate-500 dark:text-slate-400 font-bold">Line 3</p>
+                      <span className="text-[9px] uppercase font-bold text-amber-600 bg-amber-50 dark:bg-amber-950/60 px-1 rounded">Future Ready</span>
+                    </div>
+                    <p className="text-slate-400 mt-1">From: VITE_TWILIO_FROM_3</p>
+                    <p className="text-slate-400">To: VITE_TWILIO_TO_3</p>
+                  </div>
+                </div>
+              </div>
             </div>
 
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
@@ -1130,9 +1190,16 @@ export default function HospitalDashboard() {
                   </p>
                 </div>
               ) : (
-                availableHospitals.map((h) => {
+                availableHospitals.map((h, idx) => {
                   const isChecked = selectedHospitalIds.includes(h.id);
-                  const phoneDisplay = h.emergency_helpline || h.phone || 'No phone recorded';
+                  const channelInfo = resolveChannelForCall(h, idx, {
+                    id: currentHospitalId,
+                    name: facilityName,
+                    city: facilityCity,
+                    phone: facilityPhone,
+                    twilio_phone_number: facilityTwilioPhone,
+                  });
+                  const phoneDisplay = h.emergency_helpline || h.phone || channelInfo.toNumber;
                   return (
                     <div
                       key={h.id}
@@ -1154,11 +1221,9 @@ export default function HospitalDashboard() {
                           <p className="text-sm font-bold text-slate-900 dark:text-white truncate">
                             {h.hospital_name || h.name || 'Medical Facility'}
                           </p>
-                          {h.twilio_phone_number && (
-                            <span className="text-[10px] font-mono font-bold text-purple-600 dark:text-purple-400 bg-purple-50 dark:bg-purple-950/60 px-1.5 py-0.5 rounded">
-                              Caller ID Set
-                            </span>
-                          )}
+                          <span className="text-[10px] font-mono font-bold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 px-1.5 py-0.5 rounded border border-teal-200 dark:border-teal-800">
+                            {channelInfo.channelLabel}
+                          </span>
                         </div>
                         <div className="flex items-center gap-3 text-xs text-slate-500 dark:text-slate-400 mt-0.5">
                           <span className="flex items-center gap-1">
@@ -1168,6 +1233,14 @@ export default function HospitalDashboard() {
                           <span className="flex items-center gap-1 font-mono">
                             <Phone className="w-3 h-3 text-slate-400" />
                             {phoneDisplay}
+                          </span>
+                        </div>
+                        <div className="mt-1.5 pt-1.5 border-t border-slate-100 dark:border-slate-700/50 flex items-center justify-between text-[11px] font-mono">
+                          <span className="text-slate-500 dark:text-slate-400">
+                            Calling line: <strong className="text-purple-600 dark:text-purple-400">{channelInfo.fromNumber}</strong>
+                          </span>
+                          <span className="text-slate-500 dark:text-slate-400">
+                            ➔ <strong className="text-slate-800 dark:text-slate-200">{channelInfo.toNumber}</strong>
                           </span>
                         </div>
                       </div>
@@ -1265,17 +1338,27 @@ export default function HospitalDashboard() {
                 className="p-3 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 flex items-center justify-between"
               >
                 <div>
-                  <p className="text-xs font-bold text-slate-900 dark:text-white">
-                    {res.targetHospitalName}
-                  </p>
-                  <p className="text-[11px] font-mono text-slate-500 dark:text-slate-400 mt-0.5">
-                    To: {res.toPhone} · From: {res.fromPhone}
+                  <div className="flex items-center gap-2">
+                    <p className="text-xs font-bold text-slate-900 dark:text-white">
+                      {res.targetHospitalName}
+                    </p>
+                    {res.channelLabel && (
+                      <span className="text-[10px] font-bold text-teal-700 dark:text-teal-300 bg-teal-50 dark:bg-teal-950/60 px-1.5 py-0.5 rounded border border-teal-200 dark:border-teal-800">
+                        {res.channelLabel}
+                      </span>
+                    )}
+                  </div>
+                  <p className="text-[11px] font-mono text-slate-600 dark:text-slate-300 mt-0.5">
+                    To: <strong className="text-slate-900 dark:text-white">{res.toPhone}</strong> · From: <strong className="text-purple-600 dark:text-purple-400">{res.fromPhone}</strong>
                   </p>
                   <p className="text-[10px] font-mono text-slate-400">
                     SID: {res.callSid}
                   </p>
+                  {res.message && (
+                    <p className="text-[10px] text-slate-500 mt-0.5 italic">{res.message}</p>
+                  )}
                 </div>
-                <Badge variant={res.isSimulation ? 'blue' : 'green'} dot>
+                <Badge variant={res.status === 'failed' ? 'red' : res.isSimulation ? 'blue' : 'green'} dot>
                   {res.status}
                 </Badge>
               </div>

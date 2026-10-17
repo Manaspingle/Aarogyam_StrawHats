@@ -62,7 +62,27 @@ exports.makeEmergencyCall = functions.https.onRequest((req, res) => {
       }
 
       const client = twilio(accountSid, authToken);
-      const callerFrom = from || defaultFrom;
+
+      // Support dedicated hotline channels
+      const from1 = process.env.TWILIO_FROM_1;
+      const to1 = process.env.TWILIO_TO_1;
+      const from2 = process.env.TWILIO_FROM_2;
+      const to2 = process.env.TWILIO_TO_2;
+      const from3 = process.env.TWILIO_FROM_3;
+      const to3 = process.env.TWILIO_TO_3;
+
+      let callerFrom = from;
+      if (!callerFrom) {
+        if (to1 && to === to1 && from1) {
+          callerFrom = from1;
+        } else if (to2 && to === to2 && from2) {
+          callerFrom = from2;
+        } else if (to3 && to === to3 && from3) {
+          callerFrom = from3;
+        } else {
+          callerFrom = defaultFrom || from1 || '+17372508034';
+        }
+      }
 
       // Construct voice message if twiml is not explicitly provided
       const voiceTwiml = twiml || (
@@ -79,11 +99,14 @@ exports.makeEmergencyCall = functions.https.onRequest((req, res) => {
         `</Response>`
       );
 
-      // Dispatch Twilio Voice Call
+      const spokenAlert = `Emergency SOS Alert from Aarogyam Health Network. Hospital ${hospital_name || 'Medical Center'} has an immediate critical requirement for ${units || 1} units of ${blood_group || 'emergency'} blood with ${urgency || 'critical'} priority. ${notes ? `Clinical notes: ${notes}. ` : ''}Please check your Aarogyam hospital emergency dashboard now.`;
+      const voiceUrl = `https://twimlets.com/message?Message%5B0%5D=${encodeURIComponent(spokenAlert)}`;
+
+      // Dispatch Twilio Voice Call (URL compatible with all Twilio tiers)
       const call = await client.calls.create({
         to,
         from: callerFrom,
-        twiml: voiceTwiml,
+        url: voiceUrl,
       });
 
       // Log dispatch in Firestore

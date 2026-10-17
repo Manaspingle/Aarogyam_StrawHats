@@ -13,4 +13,13 @@ export default defineConfig({
   optimizeDeps: {
     exclude: ['lucide-react'],
   },
+  server: {
+    proxy: {
+      '/api/twilio': {
+        target: 'https://api.twilio.com',
+        changeOrigin: true,
+        rewrite: (path) => path.replace(/^\/api\/twilio/, ''),
+      },
+    },
+  },
 });
