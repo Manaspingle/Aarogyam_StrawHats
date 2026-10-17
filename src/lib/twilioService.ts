@@ -17,7 +17,8 @@ export interface TwilioCallingHospital {
 
 export interface TwilioTargetHospital {
   id: string;
-  name: string;
+  name?: string;
+  hospital_name?: string;
   city: string;
   phone?: string;
   emergency_helpline?: string;
@@ -264,6 +265,7 @@ export async function dispatchTwilioEmergencyCalls(
 
   for (let idx = 0; idx < options.targetHospitals.length; idx++) {
     const target = options.targetHospitals[idx];
+    const targetName = target.hospital_name || target.name || 'Hospital';
     const channelInfo = resolveChannelForCall(target, idx, options.callingHospital);
     const toNumber = channelInfo.toNumber;
     const fromNumber = channelInfo.fromNumber;
@@ -290,7 +292,7 @@ export async function dispatchTwilioEmergencyCalls(
             from: fromNumber,
             twiml,
             hospital_name: options.callingHospital.name,
-            target_hospital_name: target.name,
+            target_hospital_name: targetName,
             blood_group: options.bloodGroup,
             units: options.unitsNeeded,
             urgency: options.urgency,
@@ -302,7 +304,7 @@ export async function dispatchTwilioEmergencyCalls(
           const data = await resp.json();
           dispatchResult = {
             targetHospitalId: target.id,
-            targetHospitalName: target.name,
+            targetHospitalName: targetName,
             toPhone: toNumber,
             fromPhone: fromNumber,
             channelId: channelInfo.channelId,
@@ -317,7 +319,7 @@ export async function dispatchTwilioEmergencyCalls(
           throw new Error(`Firebase Function returned status ${resp.status}`);
         }
       } catch (fErr: any) {
-        console.warn(`Twilio function call fallback for ${target.name}:`, fErr);
+        console.warn(`Twilio function call fallback for ${targetName}:`, fErr);
         dispatchResult = createSimulatedCallResult(target, toNumber, fromNumber, options, channelInfo);
       }
     }
@@ -350,7 +352,7 @@ export async function dispatchTwilioEmergencyCalls(
           const twilioData = await resp.json();
           dispatchResult = {
             targetHospitalId: target.id,
-            targetHospitalName: target.name,
+            targetHospitalName: targetName,
             toPhone: toNumber,
             fromPhone: fromNumber,
             channelId: channelInfo.channelId,
@@ -363,11 +365,11 @@ export async function dispatchTwilioEmergencyCalls(
           };
         } else {
           const errData = await resp.json().catch(() => ({}));
-          console.warn(`Twilio API response note for ${target.name}:`, errData);
+          console.warn(`Twilio API response note for ${targetName}:`, errData);
           const errMsg = errData.message || `Twilio HTTP ${resp.status}`;
           dispatchResult = {
             targetHospitalId: target.id,
-            targetHospitalName: target.name,
+            targetHospitalName: targetName,
             toPhone: toNumber,
             fromPhone: fromNumber,
             channelId: channelInfo.channelId,
@@ -380,7 +382,7 @@ export async function dispatchTwilioEmergencyCalls(
           };
         }
       } catch (netErr: any) {
-        console.warn(`Direct Twilio call exception for ${target.name}, running verified simulation:`, netErr);
+        console.warn(`Direct Twilio call exception for ${targetName}, running verified simulation:`, netErr);
         dispatchResult = createSimulatedCallResult(target, toNumber, fromNumber, options, channelInfo);
       }
     }
@@ -413,7 +415,7 @@ function createSimulatedCallResult(
 
   return {
     targetHospitalId: target.id,
-    targetHospitalName: target.name,
+    targetHospitalName: target.hospital_name || target.name || 'Hospital',
     toPhone: toNumber,
     fromPhone: fromNumber,
     channelId: channelInfo?.channelId || 1,

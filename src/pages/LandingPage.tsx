@@ -36,7 +36,7 @@ function AnimatedCounter({ value, suffix = '' }: { value: number; suffix?: strin
   }, [inView, value]);
 
   return (
-    <span ref={ref} className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 tracking-tight">
+    <span ref={ref} className="text-4xl sm:text-5xl lg:text-6xl font-black text-slate-900 dark:text-white tracking-tight">
       {count.toLocaleString()}{suffix}
     </span>
   );
@@ -47,10 +47,10 @@ export default function LandingPage() {
   const [isEmergencyOpen, setIsEmergencyOpen] = useState(false);
 
   const statsList = [
-    { label: t('landing.stats_lives'), value: LANDING_STATS.lives_saved, suffix: '+', icon: Heart, color: 'from-brand-teal to-teal-700', lightColor: 'bg-teal-50 text-brand-teal' },
-    { label: t('landing.stats_donors'), value: LANDING_STATS.active_donors, suffix: '+', icon: Users, color: 'from-brand-orange to-orange-700', lightColor: 'bg-orange-50 text-brand-orange' },
-    { label: t('landing.stats_hospitals'), value: LANDING_STATS.hospitals_connected, suffix: '+', icon: Building2, color: 'from-brand-teal to-teal-800', lightColor: 'bg-teal-50 text-brand-teal' },
-    { label: t('landing.stats_cities'), value: LANDING_STATS.cities_covered, suffix: ' (MH)', icon: MapPin, color: 'from-purple-500 to-purple-700', lightColor: 'bg-purple-50 text-purple-600' },
+    { label: t('landing.stats_lives'), value: LANDING_STATS.lives_saved, suffix: '+', icon: Heart, color: 'from-brand-teal to-teal-700', lightColor: 'bg-teal-50 text-brand-teal dark:bg-teal-950/70 dark:text-teal-300' },
+    { label: t('landing.stats_donors'), value: LANDING_STATS.active_donors, suffix: '+', icon: Users, color: 'from-brand-orange to-orange-700', lightColor: 'bg-orange-50 text-brand-orange dark:bg-orange-950/70 dark:text-orange-300' },
+    { label: t('landing.stats_hospitals'), value: LANDING_STATS.hospitals_connected, suffix: '+', icon: Building2, color: 'from-brand-teal to-teal-800', lightColor: 'bg-teal-50 text-brand-teal dark:bg-teal-950/70 dark:text-teal-300' },
+    { label: t('landing.stats_cities'), value: LANDING_STATS.cities_covered, suffix: ' (MH)', icon: MapPin, color: 'from-purple-500 to-purple-700', lightColor: 'bg-purple-50 text-purple-600 dark:bg-purple-950/70 dark:text-purple-300' },
   ];
 
   const stepsList = [

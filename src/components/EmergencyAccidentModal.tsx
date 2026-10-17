@@ -15,16 +15,7 @@ interface EmergencyAccidentModalProps {
   defaultCity?: string;
 }
 
-const COMMON_MAHARASHTRA_CITIES = [
-  'Mumbai',
-  'Nagpur',
-  'Pune',
-  'Nashik',
-  'Thane',
-  'Chhatrapati Sambhaji Nagar',
-  'Solapur',
-  'Kolhapur',
-];
+const SUPPORTED_CITIES = ['Mumbai', 'Pune', 'Nagpur'];
 
 export default function EmergencyAccidentModal({
   isOpen,
@@ -79,13 +70,8 @@ export default function EmergencyAccidentModal({
     };
   }, [isOpen]);
 
-  // Compute available cities from registered hospitals + common cities
-  const uniqueCities = Array.from(
-    new Set([
-      ...allHospitals.map((h) => h.city?.trim()).filter(Boolean),
-      ...COMMON_MAHARASHTRA_CITIES,
-    ])
-  ) as string[];
+  // Supported platform cities (Mumbai, Pune, Nagpur)
+  const uniqueCities = SUPPORTED_CITIES;
 
   // Filter hospitals registered in the selected city
   const cityHospitals = allHospitals.filter(
@@ -461,8 +447,8 @@ export default function EmergencyAccidentModal({
                     </span>
                   </div>
 
-                  <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-                    {uniqueCities.slice(0, 4).map((city) => {
+                  <div className="grid grid-cols-3 gap-2 sm:gap-2.5">
+                    {uniqueCities.map((city) => {
                       const count = allHospitals.filter(
                         (h) => (h.city || '').toLowerCase().trim() === city.toLowerCase().trim()
                       ).length;
@@ -670,7 +656,7 @@ export default function EmergencyAccidentModal({
                       {submitting
                         ? 'Broadcasting Trauma Alert...'
                         : `DISPATCH EMERGENCY REPORT TO ${
-                            selectedHospital ? (selectedHospital.hospital_name || selectedHospital.name).toUpperCase() : 'HOSPITAL'
+                            selectedHospital ? (selectedHospital.hospital_name || selectedHospital.name || 'HOSPITAL').toUpperCase() : 'HOSPITAL'
                           }`}
                     </span>
                   </button>
