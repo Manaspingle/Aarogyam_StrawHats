@@ -3,7 +3,7 @@ import {
   Building2, Calendar, Droplet, Plus, Minus, CheckCircle2,
   Clock, Users, MapPin, ShieldCheck, AlertCircle, Award,
   Send, Truck, ArrowRight, Search, Activity, AlertTriangle,
-  Phone, PhoneCall, Check, X
+  Phone, PhoneCall, Check, X, Siren, ArrowRightLeft, Radio
 } from 'lucide-react';
 import { DashboardLayout, PageHeader, StatCard, type NavItem } from '@/components/DashboardLayout';
 import { Button, Input, Select, Card, Badge, Modal, EmptyState, Skeleton, ConfirmDialog } from '@/components/ui';
@@ -25,6 +25,10 @@ import {
   updateDonor,
   addDonorReward,
   updateHospital,
+  getEmergencyIncidents,
+  acceptAndDispatchAmbulance,
+  redirectEmergencyIncident,
+  resolveEmergencyIncident,
 } from '@/lib/firebaseDb';
 import { BLOOD_GROUPS, ORGAN_TYPES, CITIES } from '@/lib/mockData';
 import { RewardManagement } from '@/components/RewardManagement';
@@ -38,9 +42,9 @@ import {
   resolveChannelForCall,
   type TwilioCallDispatchResult,
 } from '@/lib/twilioService';
-import type { Hospital, Appointment, EmergencyRequest, Transfer, BloodInventoryItem, Donor } from '@/types';
+import type { Hospital, Appointment, EmergencyRequest, Transfer, BloodInventoryItem, Donor, EmergencyIncident } from '@/types';
 
-type View = 'overview' | 'appointments' | 'inventory' | 'emergency' | 'nearby' | 'rewards' | 'settings';
+type View = 'overview' | 'trauma' | 'appointments' | 'inventory' | 'emergency' | 'nearby' | 'rewards' | 'settings';
 
 interface NearbyFacility extends Hospital {
   distance: number;
@@ -71,6 +75,16 @@ export default function HospitalDashboard() {
   const [callDispatchResults, setCallDispatchResults] = useState<TwilioCallDispatchResult[] | null>(null);
   const [showCallResultsModal, setShowCallResultsModal] = useState(false);
 
+  // Instant Accident & Trauma Incidents
+  const [traumaIncidents, setTraumaIncidents] = useState<EmergencyIncident[]>([]);
+  const [dispatchingIncidentId, setDispatchingIncidentId] = useState<string | null>(null);
+  const [redirectingIncident, setRedirectingIncident] = useState<EmergencyIncident | null>(null);
+  const [redirectTargetHospitalId, setRedirectTargetHospitalId] = useState<string>('');
+  const [redirectReason, setRedirectReason] = useState<string>('Trauma ICU / Critical Care Beds Full');
+  const [customRedirectReason, setCustomRedirectReason] = useState<string>('');
+  const [redirectLoading, setRedirectLoading] = useState<boolean>(false);
+  const [traumaActionSuccess, setTraumaActionSuccess] = useState<string | null>(null);
+
   // Cross-Hospital Transfer State
   const [filterNearbyStock, setFilterNearbyStock] = useState('all');
   const [transferTarget, setTransferTarget] = useState<string | null>(null);
@@ -97,12 +111,13 @@ export default function HospitalDashboard() {
   const loadData = useCallback(async () => {
     setLoading(true);
 
-    const [inv, appts, emList, hospList, transList] = await Promise.all([
+    const [inv, appts, emList, hospList, transList, incidents] = await Promise.all([
       getBloodInventory(currentHospitalId),
       getAppointments({ hospital_id: currentHospitalId }),
       getEmergencyRequests(),
       getHospitals(),
       getTransfers(currentHospitalId),
+      getEmergencyIncidents(),
     ]);
 
     setInventory(inv);
@@ -110,12 +125,26 @@ export default function HospitalDashboard() {
     setEmergencies(emList);
     setAllHospitals(hospList);
     setTransfers(transList);
+    setTraumaIncidents(incidents);
     setLoading(false);
   }, [currentHospitalId]);
 
   useEffect(() => {
     loadData();
   }, [loadData]);
+
+  // Live polling for emergency accident reports
+  useEffect(() => {
+    const pollTimer = setInterval(async () => {
+      try {
+        const incidents = await getEmergencyIncidents();
+        setTraumaIncidents(incidents);
+      } catch (err) {
+        // silent fail on network jitter
+      }
+    }, 3500);
+    return () => clearInterval(pollTimer);
+  }, []);
 
   useEffect(() => {
     if (hospital) {
@@ -127,6 +156,109 @@ export default function HospitalDashboard() {
       setFacilityTwilioPhone(hospital.twilio_phone_number || '');
     }
   }, [hospital]);
+
+  // Incident filtering for this hospital
+  const myTraumaIncidents = traumaIncidents.filter((inc) => {
+    const targetId = inc.target_hospital_id || inc.primary_hospital_id;
+    const targetName = (inc.target_hospital_name || inc.primary_hospital_name || '').toLowerCase().trim();
+    const myName = (facilityName || hospital?.hospital_name || hospital?.name || '').toLowerCase().trim();
+    return (
+      targetId === currentHospitalId ||
+      targetId === hospital?.id ||
+      targetId === profile?.id ||
+      (myName && targetName === myName)
+    );
+  });
+
+  const pendingTraumaIncidents = myTraumaIncidents.filter(
+    (i) => i.status === 'pending' || i.status === 'redirected'
+  );
+  const dispatchedTraumaIncidents = myTraumaIncidents.filter((i) => i.status === 'accepted');
+  const resolvedTraumaIncidents = myTraumaIncidents.filter((i) => i.status === 'resolved');
+
+  // Accept & Immediately Dispatch Available Ambulance
+  async function handleAcceptAndDispatch(incident: EmergencyIncident) {
+    setDispatchingIncidentId(incident.id);
+    try {
+      await acceptAndDispatchAmbulance(incident.id, {
+        id: currentHospitalId,
+        name: facilityName || hospital?.hospital_name || hospital?.name,
+        hospital_name: facilityName || hospital?.hospital_name || hospital?.name,
+        city: facilityCity,
+        phone: facilityPhone,
+        emergency_helpline: facilityHelpline,
+      });
+
+      setTraumaActionSuccess(
+        `Alert Approved! Emergency trauma ambulance triggered & dispatched immediately from ${facilityName || 'Hospital'} to ${incident.location_landmark}.`
+      );
+      const updated = await getEmergencyIncidents();
+      setTraumaIncidents(updated);
+      setTimeout(() => setTraumaActionSuccess(null), 6000);
+    } catch (err) {
+      console.error('Failed to dispatch ambulance:', err);
+    } finally {
+      setDispatchingIncidentId(null);
+    }
+  }
+
+  // Redirect to Another Registered Hospital
+  async function handleConfirmRedirect(e: React.FormEvent) {
+    e.preventDefault();
+    if (!redirectingIncident || !redirectTargetHospitalId) return;
+
+    const targetHosp = allHospitals.find((h) => h.id === redirectTargetHospitalId);
+    if (!targetHosp) return;
+
+    setRedirectLoading(true);
+    const finalReason =
+      redirectReason === 'other'
+        ? customRedirectReason.trim() || 'Bed / equipment currently unavailable'
+        : redirectReason;
+
+    try {
+      await redirectEmergencyIncident(
+        redirectingIncident.id,
+        {
+          id: currentHospitalId,
+          name: facilityName || hospital?.hospital_name || hospital?.name || 'Initial Center',
+        },
+        {
+          id: targetHosp.id,
+          name: targetHosp.hospital_name || targetHosp.name || 'Receiving Hospital',
+        },
+        finalReason
+      );
+
+      setTraumaActionSuccess(
+        `Incident ${redirectingIncident.token} transferred to ${targetHosp.hospital_name || targetHosp.name}.`
+      );
+      setRedirectingIncident(null);
+      setRedirectTargetHospitalId('');
+      setRedirectReason('Trauma ICU / Critical Care Beds Full');
+      setCustomRedirectReason('');
+      const updated = await getEmergencyIncidents();
+      setTraumaIncidents(updated);
+      setTimeout(() => setTraumaActionSuccess(null), 6000);
+    } catch (err) {
+      console.error('Failed to redirect incident:', err);
+    } finally {
+      setRedirectLoading(false);
+    }
+  }
+
+  // Mark Patient Arrived & Admitted
+  async function handleResolveIncident(incidentId: string) {
+    try {
+      await resolveEmergencyIncident(incidentId);
+      const updated = await getEmergencyIncidents();
+      setTraumaIncidents(updated);
+      setTraumaActionSuccess('Patient recorded as safely arrived and admitted into trauma care.');
+      setTimeout(() => setTraumaActionSuccess(null), 5000);
+    } catch (err) {
+      console.error('Failed to resolve incident:', err);
+    }
+  }
 
   // Adjust blood units
   async function handleAdjustInventory(bloodGroup: string, delta: number) {
@@ -368,6 +500,11 @@ export default function HospitalDashboard() {
 
   const navItems: NavItem[] = [
     { id: 'overview', label: t('hospital.nav_overview'), icon: <Building2 className="h-4 w-4" /> },
+    {
+      id: 'trauma',
+      label: pendingTraumaIncidents.length > 0 ? `Accident Triage (${pendingTraumaIncidents.length})` : 'Accident Triage',
+      icon: <Siren className={`h-4 w-4 ${pendingTraumaIncidents.length > 0 ? 'text-red-600 animate-pulse' : 'text-rose-500'}`} />,
+    },
     { id: 'appointments', label: t('hospital.nav_appointments'), icon: <Users className="h-4 w-4" /> },
     { id: 'inventory', label: t('hospital.nav_inventory'), icon: <Droplet className="h-4 w-4 text-brand-orange" /> },
     { id: 'emergency', label: t('hospital.nav_emergency'), icon: <AlertTriangle className="h-4 w-4 text-red-600" /> },
@@ -401,6 +538,55 @@ export default function HospitalDashboard() {
             }
           />
 
+          {/* Action Success Notification */}
+          {traumaActionSuccess && (
+            <div className="mb-4 p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 flex items-center justify-between text-xs sm:text-sm font-bold animate-fadeIn">
+              <div className="flex items-center gap-2.5">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                <span>{traumaActionSuccess}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setTraumaActionSuccess(null)}
+                className="p-1 hover:bg-emerald-200/50 rounded-lg"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
+          {/* Urgent Incoming Accident Alert Banner */}
+          {pendingTraumaIncidents.length > 0 && (
+            <div className="mb-6 p-4 sm:p-5 rounded-3xl bg-gradient-to-r from-red-600 via-rose-600 to-red-700 text-white shadow-lg shadow-red-600/30 flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 animate-pulse">
+              <div className="flex items-center gap-3.5">
+                <div className="w-12 h-12 rounded-2xl bg-white/20 border border-white/30 flex items-center justify-center shrink-0">
+                  <Siren className="w-7 h-7 text-white" />
+                </div>
+                <div>
+                  <div className="flex items-center gap-2">
+                    <span className="px-2 py-0.5 rounded-full bg-white/30 text-[10px] font-black uppercase tracking-wider">
+                      Immediate Action Required
+                    </span>
+                    <span className="text-red-200 text-xs font-semibold">• Live Roadside Accidents</span>
+                  </div>
+                  <h3 className="text-base sm:text-lg font-black mt-0.5">
+                    {pendingTraumaIncidents.length} Emergency Accident Report(s) Awaiting Review!
+                  </h3>
+                  <p className="text-xs text-red-100">
+                    Bystander emergency reports targeted to your center. Check bed availability and dispatch ambulance immediately.
+                  </p>
+                </div>
+              </div>
+              <Button
+                variant="outline"
+                className="bg-white text-red-700 hover:bg-red-50 border-white font-black text-xs shrink-0"
+                onClick={() => setView('trauma')}
+              >
+                Review & Dispatch Bay →
+              </Button>
+            </div>
+          )}
+
           {/* Quick Stats */}
           {loading ? (
             <div className="grid grid-cols-1 gap-4 sm:grid-cols-2 lg:grid-cols-4">
@@ -421,6 +607,13 @@ export default function HospitalDashboard() {
                 subtitle={t('hospital.inhouse_storage')}
               />
               <StatCard
+                label="Accident Alerts"
+                value={pendingTraumaIncidents.length}
+                icon={<Siren className="h-5 w-5" />}
+                color="red"
+                subtitle={pendingTraumaIncidents.length > 0 ? 'Action Required' : 'Casualty Standby'}
+              />
+              <StatCard
                 label={t('hospital.nav_appointments')}
                 value={upcomingDonors.length}
                 icon={<Calendar className="h-5 w-5" />}
@@ -434,15 +627,234 @@ export default function HospitalDashboard() {
                 color="amber"
                 subtitle={t('hospital.broadcast_network')}
               />
-              <StatCard
-                label={t('hospital.network_transfers')}
-                value={transfers.length}
-                icon={<Truck className="h-5 w-5" />}
-                color="teal"
-                subtitle={t('hospital.inter_hospital')}
-              />
             </div>
           )}
+
+          {/* ── REAL-TIME TRAUMA TRIAGE & ACCIDENT ALERTS ── */}
+          <div className="mt-8">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <div className="flex items-center gap-2">
+                  <h3 className="text-base font-black text-slate-900 dark:text-white">
+                    Incoming Accident & Trauma Alerts
+                  </h3>
+                  {pendingTraumaIncidents.length > 0 && (
+                    <span className="px-2 py-0.5 rounded-full bg-red-100 dark:bg-red-900/60 text-red-600 dark:text-red-400 text-xs font-black animate-pulse">
+                      {pendingTraumaIncidents.length} Pending
+                    </span>
+                  )}
+                </div>
+                <p className="text-xs text-slate-500">
+                  Direct bystander emergency reports. Approve to trigger ambulance dispatch, or redirect if beds are full.
+                </p>
+              </div>
+
+              <Button size="xs" variant="outline" onClick={() => setView('trauma')}>
+                Full Trauma Center →
+              </Button>
+            </div>
+
+            {myTraumaIncidents.length === 0 ? (
+              <Card className="p-6 text-center border-dashed border-2 border-slate-200 dark:border-slate-800">
+                <div className="w-12 h-12 bg-slate-100 dark:bg-slate-800 text-slate-400 rounded-2xl flex items-center justify-center mx-auto mb-3">
+                  <Siren className="w-6 h-6" />
+                </div>
+                <h4 className="text-sm font-bold text-slate-700 dark:text-slate-300">
+                  No Active Accident Reports
+                </h4>
+                <p className="text-xs text-slate-500 max-w-sm mx-auto mt-1">
+                  When bystanders report roadside accidents or trauma emergencies targeted to your hospital, alerts will stream live here.
+                </p>
+              </Card>
+            ) : (
+              <div className="space-y-4">
+                {/* Pending Alerts */}
+                {pendingTraumaIncidents.map((inc) => (
+                  <div
+                    key={inc.id}
+                    className="p-5 rounded-3xl border-2 border-red-500/80 bg-red-50/40 dark:bg-red-950/20 shadow-md space-y-4"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-mono text-xs font-black px-2.5 py-1 rounded-lg bg-red-600 text-white shadow-xs">
+                            {inc.token}
+                          </span>
+                          <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-red-100 dark:bg-red-900/60 text-red-800 dark:text-red-200">
+                            👥 {inc.patient_count || inc.patients_total || 1} Victim(s)
+                          </span>
+                          <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5" />
+                            {new Date(inc.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+
+                        {inc.redirected_from_hospital_name && (
+                          <div className="mt-2 p-2 rounded-xl bg-amber-100/70 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-800 text-[11px] text-amber-900 dark:text-amber-200 font-semibold flex items-center gap-2">
+                            <ArrowRightLeft className="w-4 h-4 text-amber-600 shrink-0" />
+                            <span>
+                              Transferred from <strong>{inc.redirected_from_hospital_name}</strong>: "{inc.redirect_reason}"
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      <Badge variant="red" dot>
+                        Awaiting Approval
+                      </Badge>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                      <div className="p-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                          Accident Landmark / Location
+                        </span>
+                        <div className="flex items-start gap-2 text-slate-800 dark:text-slate-200 font-bold">
+                          <MapPin className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                          <span className="text-sm">{inc.location_landmark}</span>
+                        </div>
+                      </div>
+
+                      <div className="p-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                          Bystander Callback Contact
+                        </span>
+                        <div className="flex items-center justify-between">
+                          <div className="text-slate-800 dark:text-slate-200 font-mono font-bold text-sm">
+                            {inc.caller_phone}
+                            <span className="text-xs font-normal text-slate-500 block font-sans">
+                              {inc.caller_name || 'Bystander'}
+                            </span>
+                          </div>
+                          <a
+                            href={`tel:${inc.caller_phone.replace(/[^0-9+]/g, '')}`}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-900 dark:bg-slate-700 text-white font-bold text-[11px]"
+                          >
+                            <Phone className="w-3 h-3" /> Call Bystander
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+
+                    {inc.notes && (
+                      <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-800/80 text-xs text-slate-700 dark:text-slate-300">
+                        <strong className="text-slate-900 dark:text-white">Patient Condition / Notes: </strong>
+                        {inc.notes}
+                      </div>
+                    )}
+
+                    {/* Bed & Equipment Checklist */}
+                    <div className="p-3 rounded-2xl bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3 text-xs">
+                      <div className="flex items-center gap-4 text-slate-700 dark:text-slate-300 font-medium">
+                        <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold">
+                          <CheckCircle2 className="w-4 h-4" /> Trauma Beds Available
+                        </span>
+                        <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold">
+                          <CheckCircle2 className="w-4 h-4" /> Accessories & O2 Ready
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-amber-400 text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40 text-xs font-bold"
+                          onClick={() => {
+                            setRedirectingIncident(inc);
+                            const other = allHospitals.find((h) => h.id !== currentHospitalId);
+                            if (other) setRedirectTargetHospitalId(other.id);
+                          }}
+                        >
+                          <ArrowRightLeft className="w-3.5 h-3.5 mr-1" />
+                          Redirect (Beds Full)
+                        </Button>
+
+                        <Button
+                          size="sm"
+                          variant="danger"
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md"
+                          loading={dispatchingIncidentId === inc.id}
+                          onClick={() => handleAcceptAndDispatch(inc)}
+                        >
+                          <Truck className="w-4 h-4 mr-1.5" />
+                          Approve & Dispatch Ambulance
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+
+                {/* Dispatched En-Route Ambulances */}
+                {dispatchedTraumaIncidents.map((inc) => (
+                  <div
+                    key={inc.id}
+                    className="p-5 rounded-3xl border-2 border-emerald-500 bg-emerald-50/30 dark:bg-emerald-950/20 shadow-md space-y-3"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 rounded-xl bg-emerald-500 text-white flex items-center justify-center">
+                          <Truck className="w-4 h-4 animate-bounce" />
+                        </div>
+                        <div>
+                          <div className="flex items-center gap-2">
+                            <span className="font-mono text-xs font-black text-emerald-700 dark:text-emerald-300">
+                              {inc.token}
+                            </span>
+                            <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 text-[10px] font-black uppercase">
+                              Ambulance En-Route
+                            </span>
+                          </div>
+                          <p className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-0.5">
+                            Destination: {inc.location_landmark}
+                          </p>
+                        </div>
+                      </div>
+
+                      <Button
+                        size="sm"
+                        variant="teal"
+                        onClick={() => handleResolveIncident(inc.id)}
+                      >
+                        <CheckCircle2 className="w-4 h-4 mr-1" />
+                        Mark Patient Arrived & Admitted
+                      </Button>
+                    </div>
+
+                    {inc.ambulance_details && (
+                      <div className="p-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+                        <div>
+                          <span className="text-slate-400 font-sans text-[11px] block">Vehicle:</span>
+                          <strong className="text-slate-900 dark:text-white text-sm">
+                            {inc.ambulance_details.vehicle_number}
+                          </strong>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 font-sans text-[11px] block">Driver:</span>
+                          <strong className="text-slate-900 dark:text-white text-sm">
+                            {inc.ambulance_details.driver_name}
+                          </strong>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 font-sans text-[11px] block">Live ETA:</span>
+                          <strong className="text-emerald-600 dark:text-emerald-400 text-sm">
+                            ~{inc.ambulance_details.eta_minutes} Mins
+                          </strong>
+                        </div>
+                        <div>
+                          <a
+                            href={`tel:${inc.ambulance_details.driver_phone.replace(/[^0-9+]/g, '')}`}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-bold text-xs"
+                          >
+                            <Phone className="w-3.5 h-3.5" /> Call Pilot ({inc.ambulance_details.driver_phone})
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </div>
 
           {/* Blood Inventory Summary Grid */}
           <div className="mt-8">
@@ -602,6 +1014,303 @@ export default function HospitalDashboard() {
             </Card>
           </div>
         </>
+      )}
+
+      {/* ── VIEW: ACCIDENT & TRAUMA TRIAGE ── */}
+      {view === 'trauma' && (
+        <div className="space-y-6">
+          <PageHeader
+            title="Roadside Accident & Trauma Operations"
+            description="Live bystander accident reports, trauma bay triage, ambulance triggers, and hospital redirection network."
+            badge={
+              <Badge variant="red" dot>
+                {pendingTraumaIncidents.length} Pending Actions
+              </Badge>
+            }
+          />
+
+          {traumaActionSuccess && (
+            <div className="p-4 rounded-2xl bg-emerald-50 dark:bg-emerald-950/60 border border-emerald-300 dark:border-emerald-800 text-emerald-900 dark:text-emerald-200 flex items-center justify-between text-xs sm:text-sm font-bold">
+              <div className="flex items-center gap-2.5">
+                <CheckCircle2 className="w-5 h-5 text-emerald-600 shrink-0" />
+                <span>{traumaActionSuccess}</span>
+              </div>
+              <button
+                type="button"
+                onClick={() => setTraumaActionSuccess(null)}
+                className="p-1 hover:bg-emerald-200/50 rounded-lg"
+              >
+                <X className="w-4 h-4" />
+              </button>
+            </div>
+          )}
+
+          {/* Pending Alerts Card */}
+          <Card className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+                  <Siren className="w-5 h-5 text-red-600 animate-pulse" />
+                  Pending Roadside Accident Reports
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Verify beds and accessories. Approve to immediately dispatch an available ambulance, or redirect.
+                </p>
+              </div>
+              <Badge variant="red" dot>
+                {pendingTraumaIncidents.length} Awaiting Response
+              </Badge>
+            </div>
+
+            {pendingTraumaIncidents.length === 0 ? (
+              <EmptyState
+                icon={<CheckCircle2 className="h-6 w-6 text-emerald-500" />}
+                title="All Incoming Trauma Alerts Triaged"
+                description="There are currently no pending roadside accident reports awaiting action for your facility."
+              />
+            ) : (
+              <div className="space-y-4">
+                {pendingTraumaIncidents.map((inc) => (
+                  <div
+                    key={inc.id}
+                    className="p-5 rounded-3xl border-2 border-red-500/80 bg-red-50/40 dark:bg-red-950/20 shadow-md space-y-4"
+                  >
+                    <div className="flex flex-wrap items-start justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2 flex-wrap">
+                          <span className="font-mono text-xs font-black px-2.5 py-1 rounded-lg bg-red-600 text-white shadow-xs">
+                            {inc.token}
+                          </span>
+                          <span className="text-xs font-bold px-2 py-0.5 rounded-md bg-red-100 dark:bg-red-900/60 text-red-800 dark:text-red-200">
+                            👥 {inc.patient_count || inc.patients_total || 1} Victim(s)
+                          </span>
+                          <span className="text-xs text-slate-500 dark:text-slate-400 flex items-center gap-1">
+                            <Clock className="w-3.5 h-3.5" />
+                            {new Date(inc.timestamp).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
+                          </span>
+                        </div>
+
+                        {inc.redirected_from_hospital_name && (
+                          <div className="mt-2 p-2 rounded-xl bg-amber-100/70 dark:bg-amber-950/60 border border-amber-300 dark:border-amber-800 text-[11px] text-amber-900 dark:text-amber-200 font-semibold flex items-center gap-2">
+                            <ArrowRightLeft className="w-4 h-4 text-amber-600 shrink-0" />
+                            <span>
+                              Transferred from <strong>{inc.redirected_from_hospital_name}</strong>: "{inc.redirect_reason}"
+                            </span>
+                          </div>
+                        )}
+                      </div>
+
+                      <Badge variant="red" dot>
+                        Action Required
+                      </Badge>
+                    </div>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
+                      <div className="p-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                          Accident Landmark / Location
+                        </span>
+                        <div className="flex items-start gap-2 text-slate-800 dark:text-slate-200 font-bold">
+                          <MapPin className="w-4 h-4 text-red-500 shrink-0 mt-0.5" />
+                          <span className="text-sm">{inc.location_landmark}</span>
+                        </div>
+                      </div>
+
+                      <div className="p-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700">
+                        <span className="text-[10px] font-bold uppercase tracking-wider text-slate-400 block mb-1">
+                          Bystander Callback Contact
+                        </span>
+                        <div className="flex items-center justify-between">
+                          <div className="text-slate-800 dark:text-slate-200 font-mono font-bold text-sm">
+                            {inc.caller_phone}
+                            <span className="text-xs font-normal text-slate-500 block font-sans">
+                              {inc.caller_name || 'Bystander'}
+                            </span>
+                          </div>
+                          <a
+                            href={`tel:${inc.caller_phone.replace(/[^0-9+]/g, '')}`}
+                            className="inline-flex items-center gap-1 px-2.5 py-1.5 rounded-xl bg-slate-900 dark:bg-slate-700 text-white font-bold text-[11px]"
+                          >
+                            <Phone className="w-3 h-3" /> Call Bystander
+                          </a>
+                        </div>
+                      </div>
+                    </div>
+
+                    {inc.notes && (
+                      <div className="p-3 rounded-xl bg-slate-100 dark:bg-slate-800/80 text-xs text-slate-700 dark:text-slate-300">
+                        <strong className="text-slate-900 dark:text-white">Patient Condition / Notes: </strong>
+                        {inc.notes}
+                      </div>
+                    )}
+
+                    {/* Bed & Equipment Checklist */}
+                    <div className="p-3.5 rounded-2xl bg-white/80 dark:bg-slate-800/80 border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3 text-xs">
+                      <div className="flex items-center gap-4 text-slate-700 dark:text-slate-300 font-medium">
+                        <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold">
+                          <CheckCircle2 className="w-4 h-4" /> Trauma Beds Available
+                        </span>
+                        <span className="flex items-center gap-1.5 text-emerald-600 dark:text-emerald-400 font-bold">
+                          <CheckCircle2 className="w-4 h-4" /> Surgical Team & O2 Ready
+                        </span>
+                      </div>
+
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          className="border-amber-400 text-amber-700 dark:text-amber-300 hover:bg-amber-50 dark:hover:bg-amber-950/40 text-xs font-bold"
+                          onClick={() => {
+                            setRedirectingIncident(inc);
+                            const other = allHospitals.find((h) => h.id !== currentHospitalId);
+                            if (other) setRedirectTargetHospitalId(other.id);
+                          }}
+                        >
+                          <ArrowRightLeft className="w-3.5 h-3.5 mr-1" />
+                          Redirect (Beds Full)
+                        </Button>
+
+                        <Button
+                          size="sm"
+                          variant="danger"
+                          className="bg-emerald-600 hover:bg-emerald-700 text-white font-bold text-xs shadow-md"
+                          loading={dispatchingIncidentId === inc.id}
+                          onClick={() => handleAcceptAndDispatch(inc)}
+                        >
+                          <Truck className="w-4 h-4 mr-1.5" />
+                          Approve & Dispatch Ambulance
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+
+          {/* Active Dispatched Ambulances */}
+          <Card className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <div>
+                <h3 className="text-base font-black text-slate-900 dark:text-white flex items-center gap-2">
+                  <Truck className="w-5 h-5 text-emerald-600" />
+                  Active Dispatched Ambulances En-Route
+                </h3>
+                <p className="text-xs text-slate-500">
+                  Ambulances currently deployed to accident scenes from your hospital.
+                </p>
+              </div>
+              <Badge variant="teal" dot>
+                {dispatchedTraumaIncidents.length} Deployed
+              </Badge>
+            </div>
+
+            {dispatchedTraumaIncidents.length === 0 ? (
+              <EmptyState
+                icon={<Truck className="h-6 w-6 text-slate-400" />}
+                title="No Ambulances Currently En-Route"
+                description="Ambulance triggers dispatched for approved accident requests will show live ETA tracking here."
+              />
+            ) : (
+              <div className="space-y-3">
+                {dispatchedTraumaIncidents.map((inc) => (
+                  <div
+                    key={inc.id}
+                    className="p-5 rounded-3xl border-2 border-emerald-500 bg-emerald-50/30 dark:bg-emerald-950/20 shadow-md space-y-3"
+                  >
+                    <div className="flex flex-wrap items-center justify-between gap-3">
+                      <div>
+                        <div className="flex items-center gap-2">
+                          <span className="font-mono text-xs font-black text-emerald-700 dark:text-emerald-300">
+                            {inc.token}
+                          </span>
+                          <span className="px-2 py-0.5 rounded-full bg-emerald-100 dark:bg-emerald-900/60 text-emerald-800 dark:text-emerald-200 text-[10px] font-black uppercase">
+                            Ambulance En-Route
+                          </span>
+                        </div>
+                        <p className="text-xs font-bold text-slate-800 dark:text-slate-200 mt-1">
+                          Pickup Location: {inc.location_landmark}
+                        </p>
+                      </div>
+
+                      <Button
+                        size="sm"
+                        variant="teal"
+                        onClick={() => handleResolveIncident(inc.id)}
+                      >
+                        <CheckCircle2 className="w-4 h-4 mr-1" />
+                        Mark Patient Arrived & Admitted
+                      </Button>
+                    </div>
+
+                    {inc.ambulance_details && (
+                      <div className="p-3 rounded-2xl bg-white dark:bg-slate-800 border border-slate-200 dark:border-slate-700 flex flex-wrap items-center justify-between gap-3 text-xs font-mono">
+                        <div>
+                          <span className="text-slate-400 font-sans text-[11px] block">Vehicle:</span>
+                          <strong className="text-slate-900 dark:text-white text-sm">
+                            {inc.ambulance_details.vehicle_number}
+                          </strong>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 font-sans text-[11px] block">Driver:</span>
+                          <strong className="text-slate-900 dark:text-white text-sm">
+                            {inc.ambulance_details.driver_name}
+                          </strong>
+                        </div>
+                        <div>
+                          <span className="text-slate-400 font-sans text-[11px] block">Live ETA:</span>
+                          <strong className="text-emerald-600 dark:text-emerald-400 text-sm">
+                            ~{inc.ambulance_details.eta_minutes} Mins
+                          </strong>
+                        </div>
+                        <div>
+                          <a
+                            href={`tel:${inc.ambulance_details.driver_phone.replace(/[^0-9+]/g, '')}`}
+                            className="inline-flex items-center gap-1 px-3 py-1.5 rounded-xl bg-emerald-600 text-white font-bold text-xs"
+                          >
+                            <Phone className="w-3.5 h-3.5" /> Call Pilot ({inc.ambulance_details.driver_phone})
+                          </a>
+                        </div>
+                      </div>
+                    )}
+                  </div>
+                ))}
+              </div>
+            )}
+          </Card>
+
+          {/* Resolved History */}
+          {resolvedTraumaIncidents.length > 0 && (
+            <Card className="p-6">
+              <div className="flex items-center justify-between mb-4">
+                <h3 className="text-base font-black text-slate-900 dark:text-white">
+                  Resolved Trauma Incidents
+                </h3>
+                <span className="text-xs text-slate-500">
+                  {resolvedTraumaIncidents.length} Admitted Patients
+                </span>
+              </div>
+              <div className="space-y-2">
+                {resolvedTraumaIncidents.slice(0, 5).map((inc) => (
+                  <div
+                    key={inc.id}
+                    className="p-3 rounded-xl border border-slate-200 dark:border-slate-800 flex items-center justify-between text-xs"
+                  >
+                    <div>
+                      <span className="font-mono font-bold text-slate-800 dark:text-slate-200 mr-2">
+                        {inc.token}
+                      </span>
+                      <span className="text-slate-500">{inc.location_landmark}</span>
+                    </div>
+                    <Badge variant="teal" dot>
+                      Admitted & Stabilized
+                    </Badge>
+                  </div>
+                ))}
+              </div>
+            </Card>
+          )}
+        </div>
       )}
 
       {/* ── VIEW: INCOMING DONORS ── */}
@@ -1414,6 +2123,121 @@ export default function HospitalDashboard() {
             </Button>
           </div>
         </div>
+      </Modal>
+
+      {/* Redirect Emergency Incident Modal */}
+      <Modal
+        open={Boolean(redirectingIncident)}
+        onClose={() => setRedirectingIncident(null)}
+        title="Redirect Accident Alert to Another Hospital"
+        description="Transfer the emergency report when your ICU/trauma beds or surgical accessories are unavailable."
+        maxWidth="max-w-lg"
+      >
+        {redirectingIncident && (
+          <form onSubmit={handleConfirmRedirect} className="space-y-4">
+            <div className="p-3.5 rounded-2xl bg-slate-50 dark:bg-slate-800/70 border border-slate-200 dark:border-slate-700 text-xs space-y-1.5">
+              <div className="flex items-center justify-between">
+                <span className="font-mono font-black text-red-600 dark:text-red-400">
+                  {redirectingIncident.token}
+                </span>
+                <span className="font-bold text-slate-500">
+                  👥 {redirectingIncident.patient_count || redirectingIncident.patients_total || 1} Victim(s)
+                </span>
+              </div>
+              <p className="font-medium text-slate-700 dark:text-slate-300">
+                Location: <strong>{redirectingIncident.location_landmark}</strong>
+              </p>
+              <p className="text-slate-500">
+                Caller: {redirectingIncident.caller_phone} ({redirectingIncident.caller_name || 'Bystander'})
+              </p>
+            </div>
+
+            {/* Target Hospital Selector (Live Platform Hospitals Only) */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                Select Receiving Hospital (Registered Network) <span className="text-red-500">*</span>
+              </label>
+
+              <select
+                value={redirectTargetHospitalId}
+                onChange={(e) => setRedirectTargetHospitalId(e.target.value)}
+                required
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-sky-500"
+              >
+                <option value="">-- Choose Hospital to Receive Alert --</option>
+                {allHospitals
+                  .filter((h) => h.id !== currentHospitalId && h.user_id !== profile?.user_id)
+                  .map((h) => (
+                    <option key={h.id} value={h.id}>
+                      {h.hospital_name || h.name} ({h.city}) — {h.address || 'Casualty Bay'}
+                    </option>
+                  ))}
+              </select>
+            </div>
+
+            {/* Redirection Reason Selector */}
+            <div>
+              <label className="block text-xs font-bold uppercase tracking-wider text-slate-700 dark:text-slate-300 mb-1.5">
+                Reason for Redirection <span className="text-red-500">*</span>
+              </label>
+              <select
+                value={redirectReason}
+                onChange={(e) => setRedirectReason(e.target.value)}
+                className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-xs sm:text-sm font-semibold focus:outline-none focus:ring-2 focus:ring-sky-500 mb-2"
+              >
+                <option value="Trauma ICU / Critical Care Beds Full">
+                  Trauma ICU / Critical Care Beds Full
+                </option>
+                <option value="Emergency Operating Theatres Currently Occupied">
+                  Emergency Operating Theatres Currently Occupied
+                </option>
+                <option value="Trauma Surgical Accessories Under Maintenance">
+                  Trauma Surgical Accessories Under Maintenance
+                </option>
+                <option value="Patient Requires Specialized Neurotrauma Center">
+                  Patient Requires Specialized Neurotrauma Center
+                </option>
+                <option value="other">Other / Custom Reason...</option>
+              </select>
+
+              {redirectReason === 'other' && (
+                <input
+                  type="text"
+                  placeholder="Specify clinical or bed constraint..."
+                  value={customRedirectReason}
+                  onChange={(e) => setCustomRedirectReason(e.target.value)}
+                  required
+                  className="w-full px-3.5 py-2.5 rounded-xl border border-slate-200 dark:border-slate-700 bg-white dark:bg-slate-800 text-slate-900 dark:text-slate-100 text-xs focus:outline-none focus:ring-2 focus:ring-sky-500"
+                />
+              )}
+            </div>
+
+            <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-950/40 border border-amber-200 dark:border-amber-800 text-xs text-amber-900 dark:text-amber-200 space-y-1">
+              <p className="font-bold flex items-center gap-1.5">
+                <AlertTriangle className="w-4 h-4 text-amber-600 shrink-0" />
+                Network Protocol:
+              </p>
+              <p>
+                The bystander tracking screen and the target hospital dashboard will immediately update with this transfer.
+              </p>
+            </div>
+
+            <div className="flex justify-end gap-2 pt-2">
+              <Button variant="outline" type="button" onClick={() => setRedirectingIncident(null)}>
+                Cancel
+              </Button>
+              <Button
+                variant="danger"
+                type="submit"
+                loading={redirectLoading}
+                className="bg-amber-600 hover:bg-amber-700 text-white font-bold"
+              >
+                <ArrowRightLeft className="w-4 h-4 mr-1.5" />
+                Confirm & Redirect Alert
+              </Button>
+            </div>
+          </form>
+        )}
       </Modal>
     </DashboardLayout>
   );

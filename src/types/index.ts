@@ -274,19 +274,44 @@ export interface ScoredDonor extends Donor {
 export interface EmergencyIncident {
   id: string;
   token: string;
-  city: 'Mumbai' | 'Pune' | 'Nagpur' | string;
-  primary_hospital_id: string;
-  primary_hospital_name: string;
+  city: string;
+  target_hospital_id: string;
+  target_hospital_name: string;
+  primary_hospital_id?: string;
+  primary_hospital_name?: string;
   secondary_hospital_id?: string;
   secondary_hospital_name?: string;
+  patient_count: number;
   patients_total: number;
-  patients_primary: number;
-  patients_secondary: number;
-  reach_time_minutes: number;
-  timestamp: string;
-  status: 'Prepped & Awaiting Patient' | 'Acknowledged' | 'Received' | 'Dispatched';
+  patients_primary?: number;
+  patients_secondary?: number;
+  location_landmark: string;
+  caller_phone: string;
   caller_name?: string;
-  caller_phone?: string;
+  notes?: string;
   caller_note?: string;
   category?: string;
+  reach_time_minutes?: number;
+  timestamp: string;
+  updated_at?: string;
+  status:
+    | 'pending'
+    | 'accepted'
+    | 'redirected'
+    | 'resolved'
+    | 'Prepped & Awaiting Patient'
+    | 'Acknowledged'
+    | 'Received'
+    | 'Dispatched';
+  ambulance_dispatched?: boolean;
+  ambulance_details?: {
+    vehicle_number: string;
+    driver_name: string;
+    driver_phone: string;
+    eta_minutes: number;
+    dispatched_at: string;
+  };
+  redirected_from_hospital_id?: string;
+  redirected_from_hospital_name?: string;
+  redirect_reason?: string;
 }

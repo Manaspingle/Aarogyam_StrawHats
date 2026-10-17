@@ -537,8 +537,84 @@ export async function createEmergencyIncident(incident: EmergencyIncident): Prom
   } catch (err) {
     console.warn('Firestore createEmergencyIncident fallback:', err);
   }
-  memoryEmergencyIncidents = [incident, ...memoryEmergencyIncidents];
+  memoryEmergencyIncidents = [incident, ...memoryEmergencyIncidents.filter((i) => i.id !== incident.id)];
   return incident;
+}
+
+export async function updateEmergencyIncident(
+  id: string,
+  updates: Partial<EmergencyIncident>
+): Promise<void> {
+  const fullUpdates = { ...updates, updated_at: new Date().toISOString() };
+  try {
+    await updateDoc(doc(db, 'emergency_incidents', id), fullUpdates);
+  } catch (err) {
+    console.warn('Firestore updateEmergencyIncident fallback:', err);
+  }
+  memoryEmergencyIncidents = memoryEmergencyIncidents.map((i) =>
+    i.id === id ? { ...i, ...fullUpdates } : i
+  );
+}
+
+export async function acceptAndDispatchAmbulance(
+  incidentId: string,
+  hospital: { id: string; name?: string; hospital_name?: string; city?: string; phone?: string; emergency_helpline?: string },
+  ambulanceOverride?: Partial<NonNullable<EmergencyIncident['ambulance_details']>>
+): Promise<void> {
+  const cityCode = (hospital.city || 'MH').substring(0, 2).toUpperCase();
+  const randomVehicleNumber = `MH-${cityCode}-AMB-${Math.floor(1000 + Math.random() * 9000)}`;
+  const driverNames = [
+    'Suresh Patil (Senior Paramedic Pilot)',
+    'Rajesh Shinde (Trauma Emergency Driver)',
+    'Ganesh Deshmukh (Paramedic Responder)',
+    'Anil Jadhav (Emergency Ambulance Specialist)',
+  ];
+  const chosenDriver = driverNames[Math.floor(Math.random() * driverNames.length)];
+  const driverPhone =
+    ambulanceOverride?.driver_phone ||
+    hospital.emergency_helpline ||
+    hospital.phone ||
+    '+91 98201 10810';
+
+  const ambulanceDetails: NonNullable<EmergencyIncident['ambulance_details']> = {
+    vehicle_number: ambulanceOverride?.vehicle_number || randomVehicleNumber,
+    driver_name: ambulanceOverride?.driver_name || chosenDriver,
+    driver_phone: driverPhone,
+    eta_minutes: ambulanceOverride?.eta_minutes || Math.floor(6 + Math.random() * 6),
+    dispatched_at: new Date().toISOString(),
+  };
+
+  await updateEmergencyIncident(incidentId, {
+    status: 'accepted',
+    ambulance_dispatched: true,
+    ambulance_details: ambulanceDetails,
+  });
+}
+
+export async function redirectEmergencyIncident(
+  incidentId: string,
+  fromHospital: { id: string; name: string },
+  toHospital: { id: string; name: string },
+  reason: string
+): Promise<void> {
+  await updateEmergencyIncident(incidentId, {
+    target_hospital_id: toHospital.id,
+    target_hospital_name: toHospital.name,
+    primary_hospital_id: toHospital.id,
+    primary_hospital_name: toHospital.name,
+    redirected_from_hospital_id: fromHospital.id,
+    redirected_from_hospital_name: fromHospital.name,
+    redirect_reason: reason,
+    status: 'redirected',
+    ambulance_dispatched: false,
+    ambulance_details: undefined,
+  });
+}
+
+export async function resolveEmergencyIncident(incidentId: string): Promise<void> {
+  await updateEmergencyIncident(incidentId, {
+    status: 'resolved',
+  });
 }
 
 // ==========================================
