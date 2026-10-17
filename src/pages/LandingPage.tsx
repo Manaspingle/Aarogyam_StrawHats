@@ -93,15 +93,10 @@ export default function LandingPage() {
         <div className="absolute bottom-5 right-1/3 w-72 h-72 rounded-full bg-[#00605F]/10 dark:bg-[#00605F]/15 blur-2xl pointer-events-none" />
 
         <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 relative z-10">
-          {/* Top Announcement & Language Quick Select Bar */}
-          <div className="flex flex-wrap items-center justify-between gap-3 mb-8">
-            <div className="inline-flex items-center gap-2.5 px-4 py-2 bg-teal-50 dark:bg-teal-950/60 border border-brand-teal/20 text-brand-teal dark:text-teal-300 rounded-full text-xs sm:text-sm font-bold shadow-sm">
-              <span className="w-2.5 h-2.5 bg-brand-teal rounded-full animate-ping" />
-              <span>{t('app.hero_badge')}</span>
-            </div>
-
+          {/* Top Language Quick Select Bar */}
+          <div className="flex items-center justify-end mb-2 sm:mb-3">
             {/* Language Selector Dropdown on Landing Page as explicitly requested */}
-            <div className="flex items-center gap-2 bg-white dark:bg-slate-800 px-3.5 py-1.5 rounded-2xl border-2 border-brand-orange/30 shadow-sm">
+            <div className="flex items-center gap-2 bg-white dark:bg-slate-800 px-3.5 py-1.5 rounded-2xl border border-brand-orange/30 shadow-xs">
               <Globe className="w-4 h-4 text-brand-orange" />
               <span className="text-xs font-bold text-slate-600 dark:text-slate-300">{t('common.language')}:</span>
               <select
@@ -116,14 +111,22 @@ export default function LandingPage() {
             </div>
           </div>
 
-          <div className="grid lg:grid-cols-12 gap-12 lg:gap-8 items-center">
+          <div className="grid lg:grid-cols-12 gap-8 lg:gap-8 items-center">
             {/* Left Content Column */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.6 }}
-              className="lg:col-span-6 space-y-6"
+              className="lg:col-span-6 space-y-4 sm:space-y-5"
             >
+              {/* Announcement Badge with minimal gap to headline */}
+              <div>
+                <div className="inline-flex items-center gap-2 px-3.5 py-1.5 bg-teal-50 dark:bg-teal-950/60 border border-brand-teal/20 text-brand-teal dark:text-teal-300 rounded-full text-xs sm:text-sm font-bold shadow-xs">
+                  <span className="w-2.5 h-2.5 bg-brand-teal rounded-full animate-ping" />
+                  <span>{t('app.hero_badge')}</span>
+                </div>
+              </div>
+
               {/* Main Headline with Hindi/Marathi friendly line height */}
               <h1 className={`text-4xl sm:text-5xl lg:text-6xl font-black text-brand-teal dark:text-teal-400 ${
                 language !== 'en' ? 'leading-normal sm:leading-snug tracking-normal' : 'tracking-tight leading-[1.15]'
@@ -141,7 +144,7 @@ export default function LandingPage() {
               </p>
 
               {/* Two Standard CTAs: Donor & Hospital */}
-              <div className="flex flex-col sm:flex-row gap-4 pt-2">
+              <div className="flex flex-col sm:flex-row gap-4 pt-1">
                 <Link
                   to="/auth?mode=signup&role=individual"
                   className="flex items-center justify-center gap-2.5 px-8 py-4 bg-brand-teal hover:bg-brand-teal/90 text-white font-black rounded-2xl shadow-xl shadow-brand-teal/25 transition-all transform hover:-translate-y-0.5 text-base"
@@ -160,19 +163,19 @@ export default function LandingPage() {
                 </Link>
               </div>
 
-              {/* Trust Badges */}
-              <div className="grid grid-cols-1 xs:grid-cols-3 gap-3 sm:gap-4 pt-6 border-t border-slate-200/80 dark:border-slate-800">
-                <div className="flex items-center gap-2">
-                  <ShieldCheck className="w-5 h-5 text-brand-teal dark:text-teal-400 flex-shrink-0" />
-                  <span className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300">SHA-256 Ledger</span>
+              {/* Trust Badges in One Single Horizontal Line */}
+              <div className="flex flex-wrap items-center gap-4 sm:gap-6 pt-5 border-t border-slate-200/80 dark:border-slate-800">
+                <div className="flex items-center gap-2 shrink-0">
+                  <ShieldCheck className="w-5 h-5 text-brand-teal dark:text-teal-400 shrink-0" />
+                  <span className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">SHA-256 Ledger</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Zap className="w-5 h-5 text-brand-orange flex-shrink-0" />
-                  <span className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300">&lt; 3 Min Dispatch</span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Zap className="w-5 h-5 text-brand-orange shrink-0" />
+                  <span className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">&lt; 3 Min Dispatch</span>
                 </div>
-                <div className="flex items-center gap-2">
-                  <Award className="w-5 h-5 text-amber-600 dark:text-amber-400 flex-shrink-0" />
-                  <span className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300">MH Certified</span>
+                <div className="flex items-center gap-2 shrink-0">
+                  <Award className="w-5 h-5 text-amber-600 dark:text-amber-400 shrink-0" />
+                  <span className="text-xs sm:text-sm font-bold text-slate-700 dark:text-slate-300 whitespace-nowrap">MH Certified</span>
                 </div>
               </div>
             </motion.div>
@@ -219,7 +222,7 @@ export default function LandingPage() {
                   </div>
 
                   {/* Inspiring Imagery Grid */}
-                  <div className="grid grid-cols-1 xs:grid-cols-2 gap-3.5 mb-5">
+                  <div className="grid grid-cols-2 gap-3.5 mb-5">
                     {/* Image 1: Dedicated Critical Care Doctors */}
                     <motion.div
                       whileHover={{ scale: 1.02 }}

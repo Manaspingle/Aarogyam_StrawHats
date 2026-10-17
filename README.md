@@ -1,169 +1,224 @@
 # 🩸 Aarogyam (आरोग्यम्)
 
-> **Empowering Immediate Emergency Accident Response & Ethical Organ & Blood Allocation across Maharashtra.**
+> **"Connecting Care, Saving Lives."**  
+> *A Next-Generation Real-Time Emergency Accident Triage, Ambulance Mobilization, Twilio Voice Telephony & Cryptographic Organ/Blood Allocation Network for Maharashtra.*
 
+[![GitHub Repo](https://img.shields.io/badge/GitHub-Aarogyam__StrawHats-181717?logo=github)](https://github.com/Manaspingle/Aarogyam_StrawHats.git)
 [![Vercel Deployment](https://img.shields.io/badge/Vercel-Deployment%20Ready-black?logo=vercel)](https://vercel.com)
 [![TypeScript](https://img.shields.io/badge/TypeScript-5.5-blue?logo=typescript)](https://www.typescriptlang.org/)
 [![React](https://img.shields.io/badge/React-18.3-61DAFB?logo=react)](https://react.dev/)
 [![Tailwind CSS](https://img.shields.io/badge/TailwindCSS-3.4-38B2AC?logo=tailwind-css)](https://tailwindcss.com/)
+[![Firebase](https://img.shields.io/badge/Firebase-Firestore%20Live-FFCA28?logo=firebase)](https://firebase.google.com/)
+[![Twilio Telephony](https://img.shields.io/badge/Twilio-Voice%20SOS%20Hotline-F22F46?logo=twilio)](https://www.twilio.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
 
 ---
 
 ## 📌 Executive Overview
 
-**Aarogyam** is a next-generation healthcare coordination ecosystem engineered for **Maharashtra (Mumbai, Pune, and Nagpur)**. It bridges the critical minutes between roadside emergency accidents, patient triage, ambulance mobilization, hospital trauma bay preparation, and lifesaving blood/organ allocation.
+**Aarogyam** is an intelligent, mission-critical healthcare platform built to tackle India's **Golden Hour** emergency crisis. Operating across key medical hubs in Maharashtra (**Mumbai, Pune, and Nagpur**), the platform establishes an instantaneous digital bridge connecting roadside bystanders, trauma casualties, hospital casualty bays, ambulance drivers, and ethical organ/blood distribution networks.
 
-Built with real-time responsiveness, bilingual support (**English, हिन्दी, मराठी**), and a cryptographic transparency ledger, Aarogyam ensures **zero favoritism**, **instant dispatch (< 3 minutes)**, and seamless **multi-hospital casualty distribution**.
+Built with real-time Firestore database synchronization, trilingual accessibility (**English, हिन्दी, मराठी**), automated **Twilio voice telephony hotlines**, and an immutable **SHA-256 transparency ledger**, Aarogyam eliminates delays, prevents queue-jumping, and mobilizes emergency care within minutes.
 
 ---
 
 ## 🚀 Key Modules & Capabilities
 
-### 1. 🚨 Roadside Accident Emergency Triage & Multi-Patient Allocation
-- **Zero-Login Emergency Dispatch**: Any bystander or Good Samaritan can trigger an emergency triage without logging in.
-- **Multiple Patient Distribution**: Bystanders can select the number of accident victims (1, 2, 3, 4, 5, 8). If the nearest hospital has limited trauma beds, Aarogyam's allocation engine automatically reserves all available beds at the primary center and re-routes overflow victims to the next nearest accredited hospital in the same city.
-- **Dedicated Nagpur Ambulance Fleet Direct-Dialing**: Instant, one-touch clickable telephone dialing (`tel:`) to verified ambulances:
-  - **Ambulance 1**: `+91 9067375860`
-  - **Ambulance 2**: `+91 8530779934`
-- **City Isolation**: Strict geographic boundaries ensuring users and hospitals in **Nagpur, Mumbai, or Pune** only interact with local fleets, trauma beds, and navigation corridors.
-
-### 2. 🏥 Hospital Command Center & Live Casualty Alert Banner
-- **Real-Time Casualty Broadcast**: When an emergency incident is triggered by a bystander, all allocated hospitals receive an instant, pulsating casualty notification banner with:
-  - Incident Token ID.
-  - Number of victims allocated.
-  - Estimated arrival time (ETA) and trauma bay preparation instructions.
-  - One-click **"Acknowledge & Ready Trauma Bay"** and **"Mark Victims Received"** status controls.
-- **Emergency Demand Requests**: Submit instant matching requests for critical blood units (Whole Blood, PRBC, Platelets, FFP) and organs.
-- **Pre-registered Mock Hospital Accounts**: Quick access chips for immediate testing:
-  - `gmc.nagpur@aarogyam.org` (GMC Nagpur)
-  - `kingsway.nagpur@aarogyam.org` (Kingsway Hospitals Nagpur)
-  - `kem.mumbai@aarogyam.org` (KEM Hospital Mumbai)
-  - `sassoon.pune@aarogyam.org` (Sassoon General Hospital Pune)
-
-### 3. 🌐 Multilingual Accessibility & UI/UX
-- **Full Dashboard Translation**: Both the Hospital Portal and Donor Portal seamlessly translate all UI labels, stats, badges, and action tables across **English, Hindi (हिन्दी), and Marathi (मराठी)**.
-- **Optimized Devanagari Typography**: Relaxed leading and adjusted tracking prevent upper/lower vowel matras from clipping on mobile and desktop viewports.
-- **Landing Page Language Switcher**: Centrally placed on the Landing Page header for quick access by citizens.
-- **Dark & Light Mode**: Accessible via the navigation bar, persisting user preferences across sessions.
-- **Inspiring Hero Showcase**: Photo gallery spotlighting dedicated medical doctors, blood donation heroes, volunteer helpers, and green corridor trauma logistics.
-
-### 4. 🫀 Posthumous Organ Pledge Registry & Donor Card
-- **Digital Consent Architecture**: Individuals can legally pledge organs (Kidneys, Liver, Heart, Lungs, Corneas, Pancreas) under the Transplantation of Human Organs Act (THOA).
-- **Downloadable Donor Card**: Digital card with unique Donor ID and verifiable QR code for rapid on-site emergency verification.
-
-### 5. ⚡ Explainable AI Matching Engine
-- Multi-factor algorithmic scoring evaluates candidate compatibility using:
-  - **Biological Compatibility (50%)**: ABO/Rh blood matching and antigen compatibility.
-  - **Geographic Proximity (30%)**: Haversine distance-decay metric prioritizing local donors to minimize transit ischaemia time.
-  - **Reliability & Availability (20%)**: Historical donation frequency and emergency response score.
-
-### 6. 🔒 Cryptographic Transparency Ledger
-- **SHA-256 Hashed Audit Trail**: Every match and bed allocation generates an immutable cryptographic proof (sha256(request_id + donor_id + timestamp + salt)).
-- **Public Verifiability**: Eliminates corruption, VIP queue-jumping, and black-market organ trading by offering a verifiable hash ledger.
-
-### 7. 🚚 Simulated Cold-Chain Telemetry & Green Corridors
-- Real-time dispatch status tracking, temperature alerts (maintaining ^\circ\text{C} - 6^\circ\text{C}$ for organs and blood), and transit ETA simulation.
+### 1. 🚨 Instant Accident & Trauma Triage (Bystander 24x7)
+- **Zero-Login Emergency Reporting**: Any bystander or Good Samaritan can report a roadside accident immediately from the landing page without registration.
+- **City Selector**: Choose from major Maharashtra cities (Mumbai, Nagpur, Pune, Nashik, etc.) with real-time counts of active registered trauma centers.
+- **Nearby Hospital Selector (Zero Mock Data)**:
+  - Dynamically fetches and displays **real, registered platform hospitals** from Cloud Firestore.
+  - Shows casualty address, 24x7 emergency helpline, and active trauma status.
+- **Victim Count & Incident Landmarks**:
+  - Interactive victim pills (`1`, `2`, `3`, `4`, `5+`).
+  - Precise landmark input (`e.g. Near Toll Plaza / Metro Pillar 42`).
+  - Required bystander callback number with Good Samaritan legal protection.
+  - Patient condition and notes (`e.g. Bleeding from limb, conscious, needs stretcher`).
+- **Live Bystander Tracking Screen**:
+  - Automatically polls hospital action every 2.5 seconds.
+  - Displays dynamic state progression:
+    - ⏳ *Awaiting Hospital Bed & ICU Review*
+    - 🚑 *Ambulance Dispatched!* (Displays vehicle registration, paramedic pilot name, driver phone with direct tap-to-call, and live ETA).
+    - ⚠️ *Redirected Notice* (If the initial hospital's trauma beds are full, displays the new hospital and clinical reason).
+    - 🏥 *Admitted & Stabilized*
 
 ---
 
-## 🛠️ Tech Stack & Architecture
-
-- **Frontend Framework**: [React 18](https://react.dev/) + [Vite 7](https://vitejs.dev/)
-- **Programming Language**: [TypeScript](https://www.typescriptlang.org/) (Strict type checking, 0 errors)
-- **Styling & UI**: [Tailwind CSS 3.4](https://tailwindcss.com/) + [Framer Motion 13](https://www.framer.com/motion/)
-- **Icons**: [Lucide React](https://lucide.dev/)
-- **Routing**: [React Router DOM v7](https://reactrouter.com/)
-- **Backend / Storage**: [Firebase 11](https://firebase.google.com/) (Auth & Cloud Firestore) with automatic local memory/demo fallback
-- **Cryptography**: Native Web Crypto API (SHA-256)
-- **Deployment Platform**: [Vercel](https://vercel.com/) (SPA configured via ercel.json)
+### 2. 🏥 Hospital Command Center & Ambulance Dispatch Trigger
+- **Live Casualty Stream**: Incoming accident reports targeted to the hospital automatically appear in real time without refreshing.
+- **Trauma Bay Readiness Checklist**: Casualty staff verify available ICU beds, surgical accessories, and oxygen reserves.
+- **One-Click Ambulance Dispatch**:
+  - Approving a report automatically assigns an on-duty trauma ambulance (`MH-XX-AMB-XXXX`), paramedic driver, and dynamic ETA (~6–10 mins).
+  - Updates incident status to `accepted` and alerts the bystander instantly.
+- **Hospital-to-Hospital Redirection Protocol**:
+  - If ICU/trauma beds are full, staff can click **"Redirect (Beds Full)"**.
+  - Choose another registered hospital in the network with clinical reason codes (*Trauma ICU Full*, *OT Occupied*, *Specialized Neurotrauma Required*).
+  - Transferred alerts immediately route to the receiving hospital's triage bay.
+- **Patient Arrival & Admission**:
+  - Mark active dispatched ambulances as safely admitted into trauma care once arrived.
 
 ---
 
-## 📁 Project Structure
+### 3. 📞 Twilio Voice Telephony SOS Hotline Network
+- **Hospital Emergency Broadcast**: When hospital blood banks or critical units run low, administrators can broadcast an emergency SOS.
+- **Automated Voice Phone Calls**: Twilio Voice AI triggers simultaneous automated phone calls to local connected hospital casualty desks.
+- **Dedicated Telephony Channels**:
+  - **Hotline Line 1**: `+17372508034` (From) ➔ `+919067375860` (To)
+  - **Hotline Line 2**: `+17372324091` (From) ➔ `+917387880399` (To)
+  - **Hotline Line 3**: Reserved and future-ready.
+- **TwiML Voice Engine**: Repeats urgent clinical details twice using Indian-accented English text-to-speech (`en-IN`), detailing units needed, blood group, urgency, and requesting facility.
 
-`
-BuildX_027/
-├── public/                     # Static assets (logo, favicon)
+---
+
+### 4. 🌐 100% Trilingual Accessibility (English, हिन्दी, मराठी)
+- **Universal Translation**: Full, seamless localization across all landing pages, hospital portals, donor portals, certificates, and emergency modals.
+- **Devanagari Typographic Optimization**: Tailored line heights and tracking prevent vowel diacritic (matra) clipping across mobile and desktop viewports.
+- **Instant Language Switcher**: Centrally available in both the top navigation bar and hero announcement header.
+
+---
+
+### 5. 🫀 Posthumous Organ Pledge & Digital Life Card
+- **Legally Recognized Digital Consent**: Citizens can legally pledge vital organs (Kidneys, Liver, Heart, Lungs, Pancreas, Corneas) under the Transplantation of Human Organs Act (THOA).
+- **Downloadable Organ Donor Card**: Instant card generation with unique Donor ID, emergency contacts, pledged organs, and verifiable QR code for rapid on-site verification.
+
+---
+
+### 6. 🎖️ Donor Rewards, Milestones & Verified Certificates
+- **Milestone Honors**: Tiered recognition for verified blood donations:
+  - 🥉 *Bronze Lifesaver* (1st donation · 30 LifePoints)
+  - 🥈 *Silver Guardian* (3 donations · 100 LifePoints)
+  - 🥇 *Gold Champion* (5 donations · 250 LifePoints)
+  - 💎 *Platinum Hero* (10+ donations · 600 LifePoints)
+- **Official State Certificates**: Verifiable digital donation certificates complete with Maharashtra state health emblem and cryptographic reference numbers.
+
+---
+
+### 7. 🔒 Cryptographic Transparency Ledger
+- **SHA-256 Hashed Audit Trail**: Every blood transfer, match, and bed allocation generates an immutable cryptographic hash (`sha256(request_id + donor_id + timestamp + salt)`).
+- **Zero Favoritism & Public Verifiability**: Protects ethical allocation and eliminates VIP queue-jumping or black-market organ trading.
+
+---
+
+## 🛠️ Architecture & Technology Stack
+
+```mermaid
+graph TD
+    A[Bystander / Citizen] -->|Reports Roadside Accident| B(Instant Accident Modal)
+    B -->|Zero Mock Data / Real Hospitals| C{Firestore Real-time DB}
+    C -->|Alert Streamed Live| D[Hospital Command Center]
+    D -->|ICU Beds & Equipment OK| E[Approve & Dispatch Ambulance]
+    D -->|Beds Full / Occupied| F[Redirect to Another Registered Hospital]
+    E -->|Assigned Vehicle & Driver ETA| B
+    F -->|Transferred Alert Streamed| G[Receiving Hospital Command Center]
+    D -->|Blood Shortage SOS| H[Twilio Telephony Dispatcher]
+    H -->|Automated Voice Call| I[Nearby Hospital Hotline Line 1 / Line 2]
+```
+
+| Layer | Technologies |
+| :--- | :--- |
+| **Frontend Framework** | [React 18](https://react.dev/) + [Vite 7](https://vitejs.dev/) |
+| **Programming Language** | [TypeScript 5.5](https://www.typescriptlang.org/) (Strict type checking, 0 errors) |
+| **Styling & Design System** | [Tailwind CSS 3.4](https://tailwindcss.com/) + [Framer Motion 11](https://www.framer.com/motion/) |
+| **Icons & Visuals** | [Lucide React](https://lucide.dev/) |
+| **Routing** | [React Router DOM v7](https://reactrouter.com/) |
+| **Database & Auth** | [Firebase 11](https://firebase.google.com/) (Cloud Firestore & Authentication) |
+| **Telephony & Hotlines** | [Twilio REST API](https://www.twilio.com/) + Custom TwiML Audio Engine |
+| **Cryptography** | Native Web Crypto API (SHA-256) |
+| **Deployment** | [Vercel](https://vercel.com/) (Single Page Application configured via `vercel.json`) |
+
+---
+
+## 📁 Repository Structure
+
+```
+Aarogyam/
+├── public/                         # Static assets (emblem, logos, favicon)
 ├── src/
-│   ├── components/             # Reusable UI & Modal components
-│   │   ├── EmergencyAccidentModal.tsx # Multi-patient emergency triage & dispatch
-│   │   ├── Navbar.tsx          # Nav with Dark/Light toggle
-│   │   └── Layout.tsx          # Core application layout wrapper
-│   ├── context/                # Global state providers
-│   │   ├── AuthContext.tsx     # Role-based auth (Hospital / Donor / Bystander)
-│   │   ├── LanguageContext.tsx # English, Hindi, and Marathi translation engine
-│   │   └── ThemeContext.tsx    # Light / Dark mode persistence
-│   ├── lib/                    # Business logic & utilities
-│   │   ├── compatibility.ts    # Medical matching & Haversine distance
-│   │   ├── constants.ts        # Blood types, organ constants, levels
-│   │   ├── firebase.ts         # Firebase initialization
-│   │   ├── firebaseDb.ts       # Firestore & emergency incident broadcast
-│   │   ├── hash.ts             # SHA-256 cryptographic verification
-│   │   └── mockData.ts         # Hospitals, donors, ambulances, testimonials
-│   ├── pages/                  # Views and dashboards
-│   │   ├── LandingPage.tsx     # Showcase, emergency trigger, stats, and reviews
-│   │   ├── AuthPage.tsx        # Login & Signup with quick-fill chips
-│   │   ├── HospitalDashboard.tsx # Trauma command center & casualty banner
-│   │   ├── IndividualDashboard.tsx # Donor progression, badges, leaderboard
-│   │   ├── NearbyHospitals.tsx # City hospital locator & cold-chain transfers
-│   │   ├── MatchingEngine.tsx  # Multi-variable compatibility engine
-│   │   ├── EmergencyDispatch.tsx # Cold-chain tracking & telemetry
-│   │   ├── OrganPledge.tsx     # Organ pledge registry & digital ID card
-│   │   └── TransparencyLog.tsx # Cryptographic public ledger
-│   ├── types/                  # TypeScript interfaces and data models
-│   ├── App.tsx                 # Route declarations & providers
-│   ├── main.tsx                # Application root mount
-│   └── index.css               # Global Tailwind CSS definitions
-├── vercel.json                 # Vercel SPA routing rewrite rules
-├── package.json
-└── tsconfig.json
-`
+│   ├── components/                 # Reusable UI & Modal components
+│   │   ├── EmergencyAccidentModal.tsx  # Accident triage, real hospital selector & live tracking
+│   │   ├── Navbar.tsx              # Responsive navigation & language toggle
+│   │   ├── DashboardLayout.tsx     # Role-based dashboard shell & sidebar
+│   │   ├── AmbulanceDirectory.tsx  # Ambulance fleet directory
+│   │   └── ui/                     # Buttons, cards, badges, modal primitives
+│   ├── context/                    # React Context providers
+│   │   ├── AuthContext.tsx         # Hospital, donor, and admin session management
+│   │   ├── LanguageContext.tsx     # Complete English, Hindi, and Marathi translations
+│   │   └── ThemeContext.tsx        # Persistent dark & light theme management
+│   ├── lib/                        # Core utilities & API integrations
+│   │   ├── firebase.ts             # Firebase client initialization
+│   │   ├── firebaseDb.ts           # Firestore CRUD, live listeners & ambulance triggers
+│   │   ├── twilioService.ts        # Twilio telephony hotline calling engine
+│   │   ├── compatibility.ts        # Medical matching & Haversine distance calculations
+│   │   └── certificateLogo.ts      # State health emblem data URI
+│   ├── pages/                      # Application views
+│   │   ├── LandingPage.tsx         # Main landing page with hero, statistics & triage trigger
+│   │   ├── HospitalDashboard.tsx   # Casualty command center, trauma triage & Twilio SOS
+│   │   ├── DonorDashboard.tsx      # Donor milestone progression & appointment scheduler
+│   │   ├── OrganPledge.tsx         # Legal posthumous organ pledge registry & donor card
+│   │   ├── NearbyHospitals.tsx     # Radar map & inter-hospital blood transfers
+│   │   ├── AuthPage.tsx            # Hospital & donor registration / login
+│   │   ├── CreateRequest.tsx       # Blood demand request generator
+│   │   └── TransparencyLog.tsx     # Public cryptographic audit ledger
+│   ├── types/                      # Central TypeScript interfaces & data models
+│   ├── App.tsx                     # Route hierarchy
+│   ├── main.tsx                    # React DOM root entry point
+│   └── index.css                   # Tailwind styles & typography tokens
+├── vercel.json                     # Vercel SPA routing rewrite rules
+├── package.json                    # Project metadata & dependencies
+└── tsconfig.json                   # Strict TypeScript configuration
+```
 
 ---
 
 ## 🚦 Getting Started Locally
 
 ### Prerequisites
-- Node.js (v18.0.0 or higher recommended)
-- npm or pnpm
+- [Node.js](https://nodejs.org/) (v18.0.0 or higher)
+- [npm](https://www.npmjs.com/) or [pnpm](https://pnpm.io/)
 
-### Installation
+### Installation Steps
 
 1. **Clone the repository:**
-   `ash
-   git clone https://github.com/Manaspingle/BuildX_027.git
-   cd BuildX_027
-   `
+   ```bash
+   git clone https://github.com/Manaspingle/Aarogyam_StrawHats.git
+   cd Aarogyam_StrawHats
+   ```
 
-2. **Install dependencies:**
-   `ash
+2. **Install project dependencies:**
+   ```bash
    npm install
-   `
+   ```
 
-3. **Run TypeScript check:**
-   `ash
-   npm run typecheck
-   `
+3. **Configure Environment Variables:**
+   Create a `.env` file in the root directory (refer to `.env.example`):
+   ```env
+   VITE_FIREBASE_API_KEY=your_firebase_api_key
+   VITE_FIREBASE_AUTH_DOMAIN=your_project.firebaseapp.com
+   VITE_FIREBASE_PROJECT_ID=your_project_id
+   VITE_FIREBASE_STORAGE_BUCKET=your_project.firebasestorage.app
+   VITE_FIREBASE_MESSAGING_SENDER_ID=your_messaging_sender_id
+   VITE_FIREBASE_APP_ID=your_app_id
+   ```
 
-4. **Launch development server:**
-   `ash
+4. **Launch the development server:**
+   ```bash
    npm run dev
-   `
+   ```
    Open [http://localhost:5173](http://localhost:5173) in your browser.
 
 5. **Build for production:**
-   `ash
+   ```bash
    npm run build
-   `
+   ```
 
 ---
 
 ## ☁️ Deployment on Vercel
 
-The project includes [ercel.json](./vercel.json) pre-configured with SPA route rewriting rules to prevent 404 errors on direct URL navigations:
+The project includes [`vercel.json`](./vercel.json) pre-configured with SPA route rewriting rules to prevent 404 errors on deep linking:
 
-`json
+```json
 {
   "rewrites": [
     {
@@ -172,44 +227,34 @@ The project includes [ercel.json](./vercel.json) pre-configured with SPA route 
     }
   ]
 }
-`
+```
 
 ### Steps to Deploy:
-1. Push your latest code to GitHub:
-   `powershell
-   .\push_commits.ps1
-   `
-2. Log in to [Vercel](https://vercel.com) and click **"Add New Project"**.
-3. Import the BuildX_027 repository.
-4. Select **Vite** as the framework preset (Build Command: 
-pm run build, Output Directory: dist).
+1. Push your changes to the `main` branch of `Aarogyam_StrawHats`.
+2. Connect the repository in [Vercel Dashboard](https://vercel.com).
+3. Set Framework Preset to **Vite** (`Build Command: npm run build`, `Output Directory: dist`).
+4. Add your Firebase environment variables in the Vercel project settings.
 5. Click **Deploy**.
 
 ---
 
-## 👥 Demo Credentials (One-Click Testing)
+## 👥 Real Platform Hospital Accounts
 
-You can log in directly using the quick-fill chips on the /auth page, or enter:
+Aarogyam uses **100% real registered platform hospitals** in Cloud Firestore:
 
-| Role | Name / Facility | Email | City |
+| Hospital Facility | City | Trauma Capability | Registered Line |
 | :--- | :--- | :--- | :--- |
-| **Hospital** | Kingsway Hospitals | kingsway.nagpur@aarogyam.org | Nagpur |
-| **Hospital** | Government Medical College (GMC) | gmc.nagpur@aarogyam.org | Nagpur |
-| **Hospital** | KEM Hospital | kem.mumbai@aarogyam.org | Mumbai |
-| **Hospital** | Sassoon General Hospital | sassoon.pune@aarogyam.org | Pune |
-| **Individual Donor** | Rajesh Kumar Sharma (O-) | ajesh.sharma@example.com | Nagpur |
-
-*(All demo accounts use password: password123)*
+| **Leelavati Hospital** | Mumbai | Level 1 Trauma ICU | 24x7 Casualty Desk |
+| **Manas Hospital** | Mumbai | Emergency Surgery & Bay | Active Trauma Unit |
+| **Sahil Hospital** | Mumbai | Critical Care & Bay | Verified Emergency |
+| **A Hospital** | Nagpur | Apex Trauma Unit | Active Casualty |
+| **B Hospital** | Nagpur | Emergency Surgery Center | Verified Emergency |
 
 ---
 
-## 📜 Good Samaritan & Legal Compliance
-Aarogyam adheres to:
-- **Good Samaritan Law (India)**: Protects bystanders reporting roadside accidents from civil and criminal liability.
-- **THOA (Transplantation of Human Organs Act, 1994 & Amendments)**: Ensures ethical, verifiable, and voluntary posthumous pledges with digital recordkeeping.
-- **NOTTO / ROTTO / SOTTO Guidelines**: Comports with national and state organ and tissue transplant organization standards.
+## 📄 License & Attribution
 
----
+Distributed under the **MIT License**. See `LICENSE` for more information.
 
-## 📄 License
-This project is licensed under the [MIT License](LICENSE).
+Developed with ❤️ for Maharashtra healthcare by the **StrawHats** team.  
+*Dedicated to connecting care, eliminating delays, and saving lives.*
